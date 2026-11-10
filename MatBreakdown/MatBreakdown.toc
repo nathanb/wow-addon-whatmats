@@ -1,0 +1,7 @@
+## Interface: 16001
+## Title: MatBreakdown
+## Notes: Breaks a profession recipe down into its raw materials.
+## Version: 0.1.0
+## SavedVariablesPerCharacter: MatBreakdownDB
+
+MatBreakdown.lua
