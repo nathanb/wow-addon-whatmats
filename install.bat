@@ -3,7 +3,7 @@ setlocal
 
 rem Usage: install.bat [WoW install dir]   (default: D:\World of Warcraft)
 set "WOW=%~1"
-if "%WOW%"=="" set "WOW=D:\World of Warcraft"
+if "%WOW%"=="" set "WOW=D:\Program Files (x86)\World of Warcraft"
 
 set "ADDONS=%WOW%\_forever_\Interface\AddOns"
 set "SRC=%~dp0MatBreakdown"
