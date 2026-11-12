@@ -2,6 +2,7 @@
 ## Title: WhatMats
 ## Notes: Breaks a profession recipe down into its raw materials.
 ## Version: 0.5.1
+## X-License: BSD-3-Clause
 ## SavedVariablesPerCharacter: WhatMatsDB
 ## SavedVariables: WhatMatsVendorDB
 
