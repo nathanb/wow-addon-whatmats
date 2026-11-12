@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          ver=$(sed -n 's/^## Version:[[:space:]]*//p' WhatMats/WhatMats.toc | tr -d '\r[:space:]')
+          if [ -z "$ver" ]; then
+            echo "No ## Version in WhatMats/WhatMats.toc" >&2
+            exit 1
+          fi
+          echo "tag=v$ver" >> "$GITHUB_OUTPUT"
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing tag
+        id: exists
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null; then
+            echo "Tag ${{ steps.version.outputs.tag }} already exists; skipping release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build zip
+        if: steps.exists.outputs.skip != 'true'
+        run: zip -r WhatMats.zip WhatMats
+
+      - name: Extract release notes
+        if: steps.exists.outputs.skip != 'true'
+        env:
+          VER: ${{ steps.version.outputs.ver }}
+        run: |
+          awk -v ver="$VER" '
+            /^## / { if (found) exit; if (index($0, "## " ver " ") == 1 || $0 == "## " ver) { found = 1; next } }
+            found
+          ' WhatMats/CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "No CHANGELOG entry for $VER" >&2
+            exit 1
+          fi
+
+      - name: Create release
+        if: steps.exists.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: gh release create "$TAG" WhatMats.zip --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md

@@ -38,4 +38,4 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 
 ## Preview
 
-<img src="./art/screen-1.png" alt="Screenshot preview" />
+<img src="https://raw.githubusercontent.com/nathanb/wow-addon-whatmats/main/art/screen-1.png" alt="Screenshot preview" />
