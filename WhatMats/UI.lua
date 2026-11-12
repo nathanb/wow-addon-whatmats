@@ -371,7 +371,8 @@ function ns.LoadRecipe(recipeID, dockTo)
   qtyBox:SetText(1)
   if dockTo and not moved then
     window:ClearAllPoints()
-    window:SetPoint("TOPLEFT", dockTo, "TOPRIGHT", 4, 0)
+    -- Clears the profession tabs that hang off the frame's right edge.
+    window:SetPoint("TOPLEFT", dockTo, "TOPRIGHT", 56, 0)
   end
   if window:IsShown() then Render() else window:Show() end
   return true
