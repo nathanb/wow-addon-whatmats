@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2 - 2026-11-12
+
+- WhatMats is now licensed under the BSD 3-Clause License.
+
 ## 0.5.1 - 2026-11-11
 
 - WhatMats now closes along with the profession window when you opened it from there.
