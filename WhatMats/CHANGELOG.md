@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 - 2026-11-12
+
+- Selecting a different recipe in the profession window no longer replaces the one shown in WhatMats. Use the WhatMats button to load it.
+
 ## 0.5.2 - 2026-11-12
 
 - WhatMats is now licensed under the BSD 3-Clause License.
