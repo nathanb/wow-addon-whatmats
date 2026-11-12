@@ -59,28 +59,92 @@ local function BuildProducerIndex(recipes)
   return byOutput, recipeIDs
 end
 
--- Surplus from multi-yield crafts is reused before crafting another batch.
-local function Expand(byOutput, itemID, qty, raw, crafted, surplus, visiting)
-  local producer = byOutput[itemID]
-  if not producer or visiting[itemID] then
-    raw[itemID] = (raw[itemID] or 0) + qty
-    return
+-- Inventory (bags + bank) shared by every branch of a plan, loaded lazily.
+local function NewPool()
+  return setmetatable({}, { __index = function(t, itemID)
+    local n = C_Item.GetItemCount(itemID, true, false, true, true)
+    rawset(t, itemID, n)
+    return n
+  end })
+end
+
+local function CopyPool(pool)
+  local copy = NewPool()
+  for itemID, n in pairs(pool) do copy[itemID] = n end
+  return copy
+end
+
+-- Sums each node's unmet amount (its own plus its subtree's) into node.short.
+local function CollectGets(nodes, get)
+  local total = 0
+  for _, node in ipairs(nodes) do
+    node.short = node.get + CollectGets(node.children, get)
+    if node.get > 0 then get[node.itemID] = (get[node.itemID] or 0) + node.get end
+    total = total + node.short
   end
+  return total
+end
 
-  local fromSurplus = math.min(surplus[itemID] or 0, qty)
-  surplus[itemID] = (surplus[itemID] or 0) - fromSurplus
-  qty = qty - fromSurplus
-  if qty <= 0 then return end
+local Plan
 
-  local crafts = math.ceil(qty / producer.made)
-  surplus[itemID] = surplus[itemID] + crafts * producer.made - qty
-  crafted[itemID] = (crafted[itemID] or 0) + crafts * producer.made
-
+-- Surplus from multi-yield crafts goes back into the pool for later branches.
+local function Craft(ctx, node, producer, crafts, rem, pool, visiting)
+  local itemID = node.itemID
   visiting[itemID] = true
   for _, r in ipairs(producer.reagents) do
-    Expand(byOutput, r.itemID, r.qty * crafts, raw, crafted, surplus, visiting)
+    table.insert(node.children, Plan(ctx, r.itemID, r.qty * crafts, pool, visiting, node.depth + 1))
   end
   visiting[itemID] = nil
+  local made = crafts * producer.made
+  pool[itemID] = pool[itemID] + math.max(made - rem, 0)
+  node.made = made
+  node.get = math.max(rem - made, 0)
+  node.open = true
+end
+
+-- Most crafts whose whole reagent tree can come from inventory alone.
+local function CoverableCrafts(ctx, itemID, producer, maxCrafts, pool, visiting, depth)
+  local function covered(crafts)
+    local probe = { itemID = itemID, depth = depth, children = {}, get = 0 }
+    Craft(ctx, probe, producer, crafts, crafts * producer.made, CopyPool(pool), visiting)
+    return CollectGets(probe.children, {}) == 0
+  end
+  local lo, hi = 0, maxCrafts
+  while lo < hi do
+    local mid = math.floor((lo + hi + 1) / 2)
+    if covered(mid) then lo = mid else hi = mid - 1 end
+  end
+  return lo
+end
+
+-- expand[itemID]: true = always craft the shortfall, false = never craft,
+-- nil = craft only what inventory fully covers.
+Plan = function(ctx, itemID, qty, pool, visiting, depth)
+  local node = { itemID = itemID, need = qty, depth = depth, children = {}, made = 0, get = 0 }
+  node.used = math.min(pool[itemID], qty)
+  pool[itemID] = pool[itemID] - node.used
+  local rem = qty - node.used
+
+  local producer = ctx.byOutput[itemID]
+  if not producer or visiting[itemID] then
+    node.get = rem
+    return node
+  end
+  node.recipeID = ctx.recipeIDs[itemID]
+
+  local mode = WhatMatsDB.expand[itemID]
+  local crafts = 0
+  if mode == true then
+    crafts = math.ceil(rem / producer.made)
+  elseif mode == nil and rem > 0 then
+    crafts = CoverableCrafts(ctx, itemID, producer, math.ceil(rem / producer.made), pool, visiting, depth)
+  end
+  if mode == true or crafts > 0 then
+    Craft(ctx, node, producer, crafts, rem, pool, visiting)
+  else
+    node.get = rem
+  end
+  return node
 end
 
 function ns.FindRecipes(query)
@@ -109,6 +173,13 @@ function ns.FindRecipes(query)
   return #exact > 0 and exact or partial
 end
 
+function ns.FindRecipeByID(recipeID)
+  for profName, recipes in pairs(WhatMatsDB.recipes) do
+    local r = recipes[recipeID]
+    if r then return { profName = profName, recipe = r } end
+  end
+end
+
 local function SortedList(counts)
   local list = {}
   for itemID, n in pairs(counts) do
@@ -120,14 +191,29 @@ end
 
 function ns.Compute(hit, count)
   local byOutput, recipeIDs = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
-  local raw, crafted, surplus = {}, {}, {}
-  Expand(byOutput, hit.recipe.outputItemID, count * hit.recipe.made, raw, crafted, surplus, {})
-  crafted[hit.recipe.outputItemID] = nil
-  local craftedList = SortedList(crafted)
-  for _, l in ipairs(craftedList) do
+  local ctx = { byOutput = byOutput, recipeIDs = recipeIDs }
+  local pool = NewPool()
+  local visiting = { [hit.recipe.outputItemID] = true }
+  local tree = {}
+  for _, r in ipairs(hit.recipe.reagents) do
+    table.insert(tree, Plan(ctx, r.itemID, r.qty * count, pool, visiting, 0))
+  end
+  local getMap = {}
+  CollectGets(tree, getMap)
+  local get = SortedList(getMap)
+  for _, l in ipairs(get) do
     l.recipeID = recipeIDs[l.itemID]
   end
-  return { crafted = craftedList, raw = SortedList(raw) }
+  return { tree = tree, get = get, getMap = getMap }
+end
+
+local function PrintTree(nodes, indent)
+  for _, node in ipairs(nodes) do
+    local line = string.format("%s%d x %s", indent, node.need, ns.ItemText(node.itemID))
+    if node.made > 0 then line = line .. " - craft " .. node.made end
+    Print(line)
+    PrintTree(node.children, indent .. "  ")
+  end
 end
 
 local function PrintBreakdown(query, count)
@@ -147,14 +233,13 @@ local function PrintBreakdown(query, count)
   local hit = matches[1]
   local result = ns.Compute(hit, count)
   Print(string.format("%dx %s (%s):", count, hit.recipe.name, hit.profName))
-  if #result.crafted > 0 then
-    Print("Intermediates to craft:")
-    for _, l in ipairs(result.crafted) do
-      Print(string.format("  %d x %s", l.n, ns.ItemText(l.itemID)))
-    end
+  PrintTree(result.tree, "  ")
+  if #result.get == 0 then
+    Print("Still need: nothing")
+    return
   end
-  Print("Raw materials:")
-  for _, l in ipairs(result.raw) do
+  Print("Still need:")
+  for _, l in ipairs(result.get) do
     Print(string.format("  %d x %s", l.n, ns.ItemText(l.itemID)))
   end
 end
@@ -203,6 +288,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
       if type(WhatMatsDB) ~= "table" then
         WhatMatsDB = { recipes = {} }
       end
+      WhatMatsDB.expand = WhatMatsDB.expand or {}
       ns.InitMinimapButton()
     end
   else

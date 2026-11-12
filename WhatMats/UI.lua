@@ -11,7 +11,11 @@ window:SetClampedToScreen(true)
 window:EnableMouse(true)
 window:RegisterForDrag("LeftButton")
 window:SetScript("OnDragStart", window.StartMoving)
-window:SetScript("OnDragStop", window.StopMovingOrSizing)
+local moved = false
+window:SetScript("OnDragStop", function(self)
+  self:StopMovingOrSizing()
+  moved = true
+end)
 window:Hide()
 window.TitleText:SetText(ADDON)
 tinsert(UISpecialFrames, window:GetName())
@@ -62,62 +66,105 @@ local content = CreateFrame("Frame", nil, scroll)
 content:SetSize(330, 1)
 scroll:SetScrollChild(content)
 
-local rows = {}
-local needs = {}
+local INDENT = 14
 
-local function NeedsFor(count)
-  local map = {}
-  if count > 0 then
-    local result = ns.Compute(current.hit, count)
-    for _, l in ipairs(result.crafted) do map[l.itemID] = l.n end
-    for _, l in ipairs(result.raw) do map[l.itemID] = l.n end
+local rows = {}
+local plan
+
+local function Walk(nodes, path, fn)
+  for _, node in ipairs(nodes) do
+    local key = path .. ">" .. node.itemID
+    fn(node, key)
+    Walk(node.children, key, fn)
   end
-  return map
 end
 
--- Largest qty whose requirement for itemID fits in amount. Requirements grow by
--- at least 1 per craft, so amount is an upper bound.
+local function Index(p)
+  local byKey = {}
+  Walk(p.tree, "", function(node, key) byKey[key] = node end)
+  for _, l in ipairs(p.get) do byKey["get:" .. l.itemID] = l end
+  return byKey
+end
+
+-- Largest qty whose still-need amount for itemID fits in amount. Inventory
+-- covers the first crafts, so search upward instead of assuming a bound.
 local function MaxCountFor(itemID, amount)
-  local lo, hi = 0, amount
+  local function fits(count)
+    return (ns.Compute(current.hit, count).getMap[itemID] or 0) <= amount
+  end
+  local hi = 1
+  while hi < 99999 and fits(hi) do hi = hi * 2 end
+  hi = math.min(hi, 99999)
+  local lo = 0
   while lo < hi do
     local mid = math.floor((lo + hi + 1) / 2)
-    if (NeedsFor(mid)[itemID] or 0) <= amount then lo = mid else hi = mid - 1 end
+    if fits(mid) then lo = mid else hi = mid - 1 end
   end
   return lo
 end
 
+local function HaveText(itemID, node)
+  local bags = C_Item.GetItemCount(itemID)
+  local total = C_Item.GetItemCount(itemID, true, false, true, true)
+  local bank = total - bags
+  -- Yellow: covered, but some of it is still in a bank.
+  local color = (not node or node.short > 0) and RED_FONT_COLOR
+    or bags >= node.used and GREEN_FONT_COLOR
+    or YELLOW_FONT_COLOR
+  local text = tostring(bags)
+  if bank > 0 then text = text .. " (+" .. bank .. ")" end
+  return color:WrapTextInColorCode(text) .. " /"
+end
+
 local function UpdateValues()
-  needs = NeedsFor(current.count)
   local recipe = current.hit.recipe
   local suffix = recipe.made > 1 and (" - makes " .. current.count * recipe.made) or ""
   subtitle:SetText(current.hit.profName .. suffix)
 
+  local byKey = Index(plan)
   for _, row in ipairs(rows) do
-    if row:IsShown() and row.itemID then
-      local need = needs[row.itemID] or 0
-      local bags = C_Item.GetItemCount(row.itemID)
-      local total = C_Item.GetItemCount(row.itemID, true, false, true, true)
-      local bank = total - bags
-      -- Yellow: enough exists, but some of it is still in a bank.
-      local color = bags >= need and GREEN_FONT_COLOR
-        or total >= need and YELLOW_FONT_COLOR
-        or RED_FONT_COLOR
-      local text = tostring(bags)
-      if bank > 0 then text = text .. " (+" .. bank .. ")" end
-      row.have:SetText(color:WrapTextInColorCode(text) .. " /")
-      if not row.editable then
-        row.needText:SetText(need)
-      elseif not row.input:HasFocus() then
-        row.input:SetText(need)
+    if row:IsShown() and row.key then
+      local data = byKey[row.key]
+      if row.isGet then
+        if not row.input:HasFocus() then row.input:SetText(data and data.n or 0) end
+      else
+        row.have:SetText(HaveText(row.itemID, data))
+        row.needText:SetText(data and data.need or 0)
+        row.craftText:SetText(data and data.made > 0 and ("craft " .. data.made) or "")
       end
     end
+  end
+end
+
+local Render
+
+local function Editing()
+  for _, row in ipairs(rows) do
+    if row:IsShown() and row.input:HasFocus() then return true end
+  end
+  return false
+end
+
+-- Rebuilding rows mid-edit would move the focused input to another item.
+local function Refresh()
+  if Editing() then
+    plan = ns.Compute(current.hit, current.count)
+    UpdateValues()
+  else
+    Render()
   end
 end
 
 local function SetCount(count, fromQtyBox)
   current.count = count
   if not fromQtyBox then qtyBox:SetText(count) end
-  UpdateValues()
+  Refresh()
+end
+
+local function SetToggle(button, open)
+  local kind = open and "Minus" or "Plus"
+  button:SetNormalTexture("Interface\\Buttons\\UI-" .. kind .. "Button-Up")
+  button:SetPushedTexture("Interface\\Buttons\\UI-" .. kind .. "Button-Down")
 end
 
 local function GetRow(i)
@@ -129,9 +176,29 @@ local function GetRow(i)
   row:SetPoint("TOPLEFT", 0, -(i - 1) * ROW_HEIGHT)
   row:EnableMouse(true)
 
+  row.toggle = CreateFrame("Button", nil, row)
+  row.toggle:SetSize(14, 14)
+  row.toggle:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  row.toggle:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  row.toggle:SetScript("OnClick", function(_, button)
+    if button == "RightButton" then
+      WhatMatsDB.expand[row.itemID] = nil
+    else
+      WhatMatsDB.expand[row.itemID] = not row.open
+    end
+    Render()
+  end)
+  row.toggle:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("Click to craft or get this item")
+    GameTooltip:AddLine("Right-click to reset to suggested", GREEN_FONT_COLOR:GetRGB())
+    GameTooltip:Show()
+  end)
+  row.toggle:SetScript("OnLeave", GameTooltip_Hide)
+
   row.icon = row:CreateTexture(nil, "ARTWORK")
   row.icon:SetSize(16, 16)
-  row.icon:SetPoint("LEFT", 4, 0)
+  row.icon:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
 
   row.input = NumberBox(row)
   row.input:SetPoint("RIGHT", -4, 0)
@@ -139,8 +206,8 @@ local function GetRow(i)
     if not userInput or not current then return end
     SetCount(MaxCountFor(row.itemID, tonumber(self:GetText()) or 0))
   end)
-  row.input:SetScript("OnEditFocusLost", function(self)
-    self:SetText(needs[row.itemID] or 0)
+  row.input:SetScript("OnEditFocusLost", function()
+    if current then Render() end
   end)
 
   row.needText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -151,9 +218,13 @@ local function GetRow(i)
   row.have:SetPoint("RIGHT", row.input, "LEFT", -8, 0)
   row.have:SetJustifyH("RIGHT")
 
+  row.craftText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  row.craftText:SetPoint("RIGHT", row.have, "LEFT", -6, 0)
+  row.craftText:SetJustifyH("RIGHT")
+
   row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
-  row.name:SetPoint("RIGHT", row.have, "LEFT", -6, 0)
+  row.name:SetPoint("RIGHT", row.craftText, "LEFT", -4, 0)
   row.name:SetJustifyH("LEFT")
   row.name:SetWordWrap(false)
 
@@ -178,6 +249,8 @@ local function GetRow(i)
       local _, link = C_Item.GetItemInfo(self.itemID)
       if link then ChatFrameUtil.InsertLink(link) end
     else
+      -- Keep showing the parent recipe when the profession window follows this click.
+      ns.ignoreSelect = self.recipeID
       C_TradeSkillUI.OpenRecipe(self.recipeID)
     end
   end)
@@ -188,32 +261,44 @@ end
 
 local function SetHeader(i, text)
   local row = GetRow(i)
+  row.key = nil
   row.itemID = nil
   row.recipeID = nil
   row.icon:Hide()
+  row.toggle:Hide()
   row.input:Hide()
   row.name:SetText("")
   row.have:SetText("")
   row.needText:SetText("")
+  row.craftText:SetText("")
   row.header:SetText(text)
   row:Show()
 end
 
-local function SetItem(i, itemID, editable, recipeID)
+-- open: nil = no toggle (not craftable), true/false = expanded state.
+local function SetItem(i, itemID, key, depth, recipeID, open, isGet)
   local row = GetRow(i)
+  row.key = key
   row.itemID = itemID
   row.recipeID = recipeID
-  row.editable = editable
+  row.isGet = isGet
+  row.open = open
   row.header:SetText("")
+  row.toggle:ClearAllPoints()
+  row.toggle:SetPoint("LEFT", depth * INDENT + 2, 0)
+  row.toggle:SetShown(open ~= nil)
+  if open ~= nil then SetToggle(row.toggle, open) end
   row.icon:SetTexture(C_Item.GetItemIconByID(itemID))
   row.icon:Show()
-  row.input:SetShown(editable)
+  row.input:SetShown(isGet)
+  row.have:SetText("")
   row.needText:SetText("")
+  row.craftText:SetText("")
   row.name:SetText(ns.ItemText(itemID))
   row:Show()
 end
 
-local function Render()
+Render = function()
   for _, row in ipairs(rows) do row:Hide() end
   if not current then
     icon:Hide()
@@ -229,19 +314,23 @@ local function Render()
   icon:Show()
   title:SetText(recipe.name)
 
-  -- Layout comes from qty 1 so rows stay put when qty is 0.
-  local layout = ns.Compute(current.hit, 1)
-  local i = 0
-  if #layout.crafted > 0 then
-    i = i + 1; SetHeader(i, "Craft first")
-    for _, l in ipairs(layout.crafted) do
-      i = i + 1; SetItem(i, l.itemID, false, l.recipeID)
+  plan = ns.Compute(current.hit, current.count)
+  local i = 1
+  SetHeader(i, "Materials")
+  Walk(plan.tree, "", function(node, key)
+    local open
+    if node.recipeID then open = node.open == true end
+    i = i + 1; SetItem(i, node.itemID, key, node.depth, node.recipeID, open, false)
+  end)
+  i = i + 1; SetHeader(i, " ")
+  i = i + 1
+  if #plan.get == 0 then
+    SetHeader(i, "Still need: nothing")
+  else
+    SetHeader(i, "Still need")
+    for _, l in ipairs(plan.get) do
+      i = i + 1; SetItem(i, l.itemID, "get:" .. l.itemID, 0, l.recipeID, nil, true)
     end
-    i = i + 1; SetHeader(i, " ")
-  end
-  i = i + 1; SetHeader(i, "Raw materials")
-  for _, l in ipairs(layout.raw) do
-    i = i + 1; SetItem(i, l.itemID, true)
   end
   content:SetHeight(i * ROW_HEIGHT)
   UpdateValues()
@@ -270,6 +359,24 @@ function ns.ToggleWindow()
   window:SetShown(not window:IsShown())
 end
 
+function ns.IsWindowShown()
+  return window:IsShown()
+end
+
+-- Docks beside dockTo until the player drags the window somewhere else.
+function ns.LoadRecipe(recipeID, dockTo)
+  local hit = ns.FindRecipeByID(recipeID)
+  if not hit then return false end
+  current = { hit = hit, count = 1 }
+  qtyBox:SetText(1)
+  if dockTo and not moved then
+    window:ClearAllPoints()
+    window:SetPoint("TOPLEFT", dockTo, "TOPRIGHT", 4, 0)
+  end
+  if window:IsShown() then Render() else window:Show() end
+  return true
+end
+
 window:SetScript("OnShow", Render)
 
 hooksecurefunc("HandleModifiedItemClick", function(link)
@@ -280,7 +387,7 @@ end)
 
 window:RegisterEvent("BAG_UPDATE_DELAYED")
 window:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-window:SetScript("OnEvent", function(_, event)
+window:SetScript("OnEvent", function()
   if not window:IsShown() or not current then return end
-  if event == "GET_ITEM_INFO_RECEIVED" then Render() else UpdateValues() end
+  Refresh()
 end)
