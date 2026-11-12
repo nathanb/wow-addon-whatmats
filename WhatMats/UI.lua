@@ -204,6 +204,12 @@ local function GetRow(i)
   end)
   row.toggle:SetScript("OnLeave", GameTooltip_Hide)
 
+  -- Totals rows have no toggle, so the vendor marker takes its slot.
+  row.vendor = row:CreateTexture(nil, "ARTWORK")
+  row.vendor:SetSize(14, 14)
+  row.vendor:SetPoint("CENTER", row.toggle, "CENTER")
+  row.vendor:SetTexture("Interface\\GossipFrame\\VendorGossipIcon")
+
   row.icon = row:CreateTexture(nil, "ARTWORK")
   row.icon:SetSize(16, 16)
   row.icon:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
@@ -243,6 +249,10 @@ local function GetRow(i)
     if not self.itemID then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetItemByID(self.itemID)
+    if self.isTotal and ns.IsVendorItem(self.itemID) then
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine("Sold by a vendor", HIGHLIGHT_FONT_COLOR:GetRGB())
+    end
     if self.recipeID then
       GameTooltip:AddLine(" ")
       GameTooltip:AddLine("Click to open recipe", GREEN_FONT_COLOR:GetRGB())
@@ -273,6 +283,7 @@ local function SetHeader(i, text)
   row.itemID = nil
   row.recipeID = nil
   row.icon:Hide()
+  row.vendor:Hide()
   row.toggle:Hide()
   row.input:Hide()
   row.name:SetText("")
@@ -296,6 +307,7 @@ local function SetItem(i, itemID, key, depth, recipeID, open, isTotal)
   row.toggle:SetPoint("LEFT", depth * INDENT + 2, 0)
   row.toggle:SetShown(open ~= nil)
   if open ~= nil then SetToggle(row.toggle, open) end
+  row.vendor:SetShown(isTotal and ns.IsVendorItem(itemID))
   row.icon:SetTexture(C_Item.GetItemIconByID(itemID))
   row.icon:Show()
   row.input:SetShown(isTotal)
@@ -392,7 +404,9 @@ end)
 
 window:RegisterEvent("BAG_UPDATE_DELAYED")
 window:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-window:SetScript("OnEvent", function()
+function ns.RefreshWindow()
   if not window:IsShown() or not current then return end
   Refresh()
-end)
+end
+
+window:SetScript("OnEvent", ns.RefreshWindow)

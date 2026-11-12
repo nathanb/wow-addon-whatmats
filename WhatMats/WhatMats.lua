@@ -251,6 +251,24 @@ function ns.Compute(hit, count)
   return { tree = tree, totals = totals, crafted = crafted }
 end
 
+-- No API says whether a vendor sells an item, so learn it from merchants visited.
+-- Only gold purchases count; anything with a currency or item cost is skipped.
+local function ScanMerchant()
+  local added = false
+  for i = 1, GetMerchantNumItems() do
+    local itemID = GetMerchantItemID(i)
+    if itemID and not WhatMatsVendorDB[itemID] and GetMerchantItemCostInfo(i) == 0 then
+      WhatMatsVendorDB[itemID] = true
+      added = true
+    end
+  end
+  if added then ns.RefreshWindow() end
+end
+
+function ns.IsVendorItem(itemID)
+  return WhatMatsVendorDB[itemID] == true
+end
+
 local function PrintTree(nodes, indent)
   for _, node in ipairs(nodes) do
     local line = string.format("%s%d x %s", indent, node.need, ns.ItemText(node.itemID))
@@ -292,6 +310,7 @@ local function PrintHelp()
   Print("/mats <recipe name or shift-clicked link> [count]  - print breakdown to chat")
   Print("/mats scan  - rescan the open profession window")
   Print("/mats list  - show scanned professions")
+  Print("/mats resetvendors  - forget all learned vendor items")
   Print("/mats help  - this help")
 end
 
@@ -309,6 +328,10 @@ SlashCmdList.WHATMATS = function(msg)
     else
       Print("Open your own profession window first.")
     end
+  elseif msg == "resetvendors" then
+    wipe(WhatMatsVendorDB)
+    ns.RefreshWindow()
+    Print("Vendor items cleared. Visit merchants to relearn them.")
   elseif msg == "list" then
     for profName, recipes in pairs(WhatMatsDB.recipes) do
       local n = 0
@@ -325,6 +348,8 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("TRADE_SKILL_SHOW")
 frame:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
+frame:RegisterEvent("MERCHANT_SHOW")
+frame:RegisterEvent("MERCHANT_UPDATE")
 frame:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" then
     if arg1 == ADDON then
@@ -332,8 +357,13 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         WhatMatsDB = { recipes = {} }
       end
       WhatMatsDB.expand = WhatMatsDB.expand or {}
+      if type(WhatMatsVendorDB) ~= "table" then
+        WhatMatsVendorDB = {}
+      end
       ns.InitMinimapButton()
     end
+  elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then
+    ScanMerchant()
   else
     ScanProfession()
   end
