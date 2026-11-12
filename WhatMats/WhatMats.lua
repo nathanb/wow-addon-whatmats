@@ -50,13 +50,22 @@ local function ScanProfession()
   return prof.professionName, count
 end
 
-local function BuildProducerIndex(recipes)
-  local byOutput, recipeIDs = {}, {}
-  for recipeID, r in pairs(recipes) do
-    byOutput[r.outputItemID] = r
-    recipeIDs[r.outputItemID] = recipeID
+-- Producers from every scanned profession; primaryProf is indexed last so its
+-- recipe wins when another profession makes the same item.
+local function BuildProducerIndex(primaryProf)
+  local byOutput, recipeIDs, profByOutput = {}, {}, {}
+  local function add(profName, recipes)
+    for recipeID, r in pairs(recipes) do
+      byOutput[r.outputItemID] = r
+      recipeIDs[r.outputItemID] = recipeID
+      profByOutput[r.outputItemID] = profName
+    end
   end
-  return byOutput, recipeIDs
+  for profName, recipes in pairs(WhatMatsDB.recipes) do
+    if profName ~= primaryProf then add(profName, recipes) end
+  end
+  add(primaryProf, WhatMatsDB.recipes[primaryProf] or {})
+  return byOutput, recipeIDs, profByOutput
 end
 
 -- Inventory (bags + bank) shared by every branch of a plan, loaded lazily.
@@ -131,6 +140,7 @@ Plan = function(ctx, itemID, qty, pool, visiting, depth)
     return node
   end
   node.recipeID = ctx.recipeIDs[itemID]
+  node.profName = ctx.profByOutput[itemID]
 
   local mode = WhatMatsDB.expand[itemID]
   local crafts = 0
@@ -222,7 +232,7 @@ local function Expand(byOutput, crafted, itemID, qty, totals, surplus, visiting)
 end
 
 function ns.Totals(hit, count, crafted)
-  local byOutput = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
+  local byOutput = BuildProducerIndex(hit.profName)
   local totals, surplus = {}, {}
   local visiting = { [hit.recipe.outputItemID] = true }
   for _, r in ipairs(hit.recipe.reagents) do
@@ -232,8 +242,8 @@ function ns.Totals(hit, count, crafted)
 end
 
 function ns.Compute(hit, count)
-  local byOutput, recipeIDs = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
-  local ctx = { byOutput = byOutput, recipeIDs = recipeIDs }
+  local byOutput, recipeIDs, profByOutput = BuildProducerIndex(hit.profName)
+  local ctx = { byOutput = byOutput, recipeIDs = recipeIDs, profByOutput = profByOutput }
   local pool = NewPool()
   local visiting = { [hit.recipe.outputItemID] = true }
   local tree = {}

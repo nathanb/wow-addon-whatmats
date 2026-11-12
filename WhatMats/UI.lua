@@ -255,6 +255,9 @@ local function GetRow(i)
     end
     if self.recipeID then
       GameTooltip:AddLine(" ")
+      if self.profName and self.profName ~= current.hit.profName then
+        GameTooltip:AddLine("Crafted with " .. self.profName, HIGHLIGHT_FONT_COLOR:GetRGB())
+      end
       GameTooltip:AddLine("Click to open recipe", GREEN_FONT_COLOR:GetRGB())
       GameTooltip:AddLine("Shift-click to link in chat", GREEN_FONT_COLOR:GetRGB())
     end
@@ -293,11 +296,12 @@ local function SetHeader(i, text)
 end
 
 -- open: nil = no toggle (not craftable), true/false = expanded state.
-local function SetItem(i, itemID, key, depth, recipeID, open, isTotal)
+local function SetItem(i, itemID, key, depth, recipeID, open, isTotal, profName)
   local row = GetRow(i)
   row.key = key
   row.itemID = itemID
   row.recipeID = recipeID
+  row.profName = profName
   row.isTotal = isTotal
   row.open = open
   row.header:SetText("")
@@ -338,7 +342,7 @@ Render = function()
   Walk(plan.tree, "", function(node, key)
     local open
     if node.recipeID then open = node.open == true end
-    i = i + 1; SetItem(i, node.itemID, key, node.depth, node.recipeID, open, false)
+    i = i + 1; SetItem(i, node.itemID, key, node.depth, node.recipeID, open, false, node.profName)
   end)
   i = i + 1; SetHeader(i, " ")
   i = i + 1; SetHeader(i, "Totals")
