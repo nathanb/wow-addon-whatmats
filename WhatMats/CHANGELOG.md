@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Materials made by your other professions (e.g. Bronze Bar in an Engineering recipe, Medium Leather in a Leatherworking recipe) now break down too. Open each profession once so it can be scanned.
+
 ## 0.5.3 - 2026-11-12
 
 - Selecting a different recipe in the profession window no longer replaces the one shown in WhatMats. Use the WhatMats button to load it.
