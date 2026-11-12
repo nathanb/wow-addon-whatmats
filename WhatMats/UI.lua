@@ -376,6 +376,7 @@ function ns.LoadRecipe(recipeID, dockTo)
     window:ClearAllPoints()
     -- Clears the profession tabs that hang off the frame's right edge.
     window:SetPoint("TOPLEFT", dockTo, "TOPRIGHT", 56, 0)
+    window:SetHeight(dockTo:GetHeight())
   end
   if window:IsShown() then Render() else window:Show() end
   return true
