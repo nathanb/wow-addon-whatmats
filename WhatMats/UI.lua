@@ -82,15 +82,17 @@ end
 local function Index(p)
   local byKey = {}
   Walk(p.tree, "", function(node, key) byKey[key] = node end)
-  for _, l in ipairs(p.get) do byKey["get:" .. l.itemID] = l end
+  for _, l in ipairs(p.totals) do byKey["total:" .. l.itemID] = l end
   return byKey
 end
 
--- Largest qty whose still-need amount for itemID fits in amount. Inventory
--- covers the first crafts, so search upward instead of assuming a bound.
+-- Largest qty whose total for itemID fits in amount, keeping the tree's
+-- current shape. Multi-yield crafts can need less than 1 per qty, so search
+-- upward instead of assuming a bound.
 local function MaxCountFor(itemID, amount)
+  local crafted = plan.crafted
   local function fits(count)
-    return (ns.Compute(current.hit, count).getMap[itemID] or 0) <= amount
+    return (ns.Totals(current.hit, count, crafted)[itemID] or 0) <= amount
   end
   local hi = 1
   while hi < 99999 and fits(hi) do hi = hi * 2 end
@@ -103,13 +105,15 @@ local function MaxCountFor(itemID, amount)
   return lo
 end
 
-local function HaveText(itemID, node)
+-- covered defaults to whether bags + bank hold need.
+local function HaveText(itemID, need, covered)
   local bags = C_Item.GetItemCount(itemID)
   local total = C_Item.GetItemCount(itemID, true, false, true, true)
   local bank = total - bags
+  if covered == nil then covered = total >= need end
   -- Yellow: covered, but some of it is still in a bank.
-  local color = (not node or node.short > 0) and RED_FONT_COLOR
-    or bags >= node.used and GREEN_FONT_COLOR
+  local color = not covered and RED_FONT_COLOR
+    or bags >= need and GREEN_FONT_COLOR
     or YELLOW_FONT_COLOR
   local text = tostring(bags)
   if bank > 0 then text = text .. " (+" .. bank .. ")" end
@@ -125,10 +129,14 @@ local function UpdateValues()
   for _, row in ipairs(rows) do
     if row:IsShown() and row.key then
       local data = byKey[row.key]
-      if row.isGet then
-        if not row.input:HasFocus() then row.input:SetText(data and data.n or 0) end
+      if row.isTotal then
+        local n = data and data.n or 0
+        if not row.input:HasFocus() then row.input:SetText(n) end
+        row.have:SetText(HaveText(row.itemID, n))
+        local short = n - C_Item.GetItemCount(row.itemID, true, false, true, true)
+        row.craftText:SetText(short > 0 and ("short " .. short) or "")
       else
-        row.have:SetText(HaveText(row.itemID, data))
+        row.have:SetText(HaveText(row.itemID, data and data.used or 0, data ~= nil and data.short == 0))
         row.needText:SetText(data and data.need or 0)
         row.craftText:SetText(data and data.made > 0 and ("craft " .. data.made) or "")
       end
@@ -276,12 +284,12 @@ local function SetHeader(i, text)
 end
 
 -- open: nil = no toggle (not craftable), true/false = expanded state.
-local function SetItem(i, itemID, key, depth, recipeID, open, isGet)
+local function SetItem(i, itemID, key, depth, recipeID, open, isTotal)
   local row = GetRow(i)
   row.key = key
   row.itemID = itemID
   row.recipeID = recipeID
-  row.isGet = isGet
+  row.isTotal = isTotal
   row.open = open
   row.header:SetText("")
   row.toggle:ClearAllPoints()
@@ -290,7 +298,7 @@ local function SetItem(i, itemID, key, depth, recipeID, open, isGet)
   if open ~= nil then SetToggle(row.toggle, open) end
   row.icon:SetTexture(C_Item.GetItemIconByID(itemID))
   row.icon:Show()
-  row.input:SetShown(isGet)
+  row.input:SetShown(isTotal)
   row.have:SetText("")
   row.needText:SetText("")
   row.craftText:SetText("")
@@ -323,14 +331,9 @@ Render = function()
     i = i + 1; SetItem(i, node.itemID, key, node.depth, node.recipeID, open, false)
   end)
   i = i + 1; SetHeader(i, " ")
-  i = i + 1
-  if #plan.get == 0 then
-    SetHeader(i, "Still need: nothing")
-  else
-    SetHeader(i, "Still need")
-    for _, l in ipairs(plan.get) do
-      i = i + 1; SetItem(i, l.itemID, "get:" .. l.itemID, 0, l.recipeID, nil, true)
-    end
+  i = i + 1; SetHeader(i, "Totals")
+  for _, l in ipairs(plan.totals) do
+    i = i + 1; SetItem(i, l.itemID, "total:" .. l.itemID, 0, l.recipeID, nil, true)
   end
   content:SetHeight(i * ROW_HEIGHT)
   UpdateValues()

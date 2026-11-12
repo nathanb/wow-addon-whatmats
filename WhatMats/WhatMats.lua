@@ -189,6 +189,48 @@ local function SortedList(counts)
   return list
 end
 
+local function MarkCrafted(nodes, crafted)
+  for _, node in ipairs(nodes) do
+    if node.open then crafted[node.itemID] = true end
+    MarkCrafted(node.children, crafted)
+  end
+end
+
+-- Inventory-free recipe math in a fixed shape: items in `crafted` are fully
+-- crafted, everything else is a base material. Surplus from multi-yield
+-- crafts is reused before crafting another batch.
+local function Expand(byOutput, crafted, itemID, qty, totals, surplus, visiting)
+  local producer = byOutput[itemID]
+  if not crafted[itemID] or not producer or visiting[itemID] then
+    totals[itemID] = (totals[itemID] or 0) + qty
+    return
+  end
+
+  local fromSurplus = math.min(surplus[itemID] or 0, qty)
+  surplus[itemID] = (surplus[itemID] or 0) - fromSurplus
+  qty = qty - fromSurplus
+  if qty <= 0 then return end
+
+  local crafts = math.ceil(qty / producer.made)
+  surplus[itemID] = surplus[itemID] + crafts * producer.made - qty
+
+  visiting[itemID] = true
+  for _, r in ipairs(producer.reagents) do
+    Expand(byOutput, crafted, r.itemID, r.qty * crafts, totals, surplus, visiting)
+  end
+  visiting[itemID] = nil
+end
+
+function ns.Totals(hit, count, crafted)
+  local byOutput = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
+  local totals, surplus = {}, {}
+  local visiting = { [hit.recipe.outputItemID] = true }
+  for _, r in ipairs(hit.recipe.reagents) do
+    Expand(byOutput, crafted, r.itemID, r.qty * count, totals, surplus, visiting)
+  end
+  return totals
+end
+
 function ns.Compute(hit, count)
   local byOutput, recipeIDs = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
   local ctx = { byOutput = byOutput, recipeIDs = recipeIDs }
@@ -198,13 +240,15 @@ function ns.Compute(hit, count)
   for _, r in ipairs(hit.recipe.reagents) do
     table.insert(tree, Plan(ctx, r.itemID, r.qty * count, pool, visiting, 0))
   end
-  local getMap = {}
-  CollectGets(tree, getMap)
-  local get = SortedList(getMap)
-  for _, l in ipairs(get) do
+  CollectGets(tree, {})
+
+  local crafted = {}
+  MarkCrafted(tree, crafted)
+  local totals = SortedList(ns.Totals(hit, count, crafted))
+  for _, l in ipairs(totals) do
     l.recipeID = recipeIDs[l.itemID]
   end
-  return { tree = tree, get = get, getMap = getMap }
+  return { tree = tree, totals = totals, crafted = crafted }
 end
 
 local function PrintTree(nodes, indent)
@@ -234,13 +278,12 @@ local function PrintBreakdown(query, count)
   local result = ns.Compute(hit, count)
   Print(string.format("%dx %s (%s):", count, hit.recipe.name, hit.profName))
   PrintTree(result.tree, "  ")
-  if #result.get == 0 then
-    Print("Still need: nothing")
-    return
-  end
-  Print("Still need:")
-  for _, l in ipairs(result.get) do
-    Print(string.format("  %d x %s", l.n, ns.ItemText(l.itemID)))
+  Print("Totals:")
+  for _, l in ipairs(result.totals) do
+    local line = string.format("  %d x %s", l.n, ns.ItemText(l.itemID))
+    local short = l.n - C_Item.GetItemCount(l.itemID, true, false, true, true)
+    if short > 0 then line = line .. " (short " .. short .. ")" end
+    Print(line)
   end
 end
 
