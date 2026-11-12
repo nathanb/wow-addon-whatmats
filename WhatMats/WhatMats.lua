@@ -51,11 +51,12 @@ local function ScanProfession()
 end
 
 local function BuildProducerIndex(recipes)
-  local byOutput = {}
-  for _, r in pairs(recipes) do
+  local byOutput, recipeIDs = {}, {}
+  for recipeID, r in pairs(recipes) do
     byOutput[r.outputItemID] = r
+    recipeIDs[r.outputItemID] = recipeID
   end
-  return byOutput
+  return byOutput, recipeIDs
 end
 
 -- Surplus from multi-yield crafts is reused before crafting another batch.
@@ -118,11 +119,15 @@ local function SortedList(counts)
 end
 
 function ns.Compute(hit, count)
-  local byOutput = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
+  local byOutput, recipeIDs = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
   local raw, crafted, surplus = {}, {}, {}
   Expand(byOutput, hit.recipe.outputItemID, count * hit.recipe.made, raw, crafted, surplus, {})
   crafted[hit.recipe.outputItemID] = nil
-  return { crafted = SortedList(crafted), raw = SortedList(raw) }
+  local craftedList = SortedList(crafted)
+  for _, l in ipairs(craftedList) do
+    l.recipeID = recipeIDs[l.itemID]
+  end
+  return { crafted = craftedList, raw = SortedList(raw) }
 end
 
 local function PrintBreakdown(query, count)

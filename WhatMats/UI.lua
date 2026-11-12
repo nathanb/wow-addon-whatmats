@@ -164,9 +164,23 @@ local function GetRow(i)
     if not self.itemID then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetItemByID(self.itemID)
+    if self.recipeID then
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine("Click to open recipe", GREEN_FONT_COLOR:GetRGB())
+      GameTooltip:AddLine("Shift-click to link in chat", GREEN_FONT_COLOR:GetRGB())
+    end
     GameTooltip:Show()
   end)
   row:SetScript("OnLeave", GameTooltip_Hide)
+  row:SetScript("OnMouseUp", function(self, button)
+    if button ~= "LeftButton" or not self.recipeID then return end
+    if IsModifiedClick("CHATLINK") then
+      local _, link = C_Item.GetItemInfo(self.itemID)
+      if link then ChatFrameUtil.InsertLink(link) end
+    else
+      C_TradeSkillUI.OpenRecipe(self.recipeID)
+    end
+  end)
 
   rows[i] = row
   return row
@@ -175,6 +189,7 @@ end
 local function SetHeader(i, text)
   local row = GetRow(i)
   row.itemID = nil
+  row.recipeID = nil
   row.icon:Hide()
   row.input:Hide()
   row.name:SetText("")
@@ -184,9 +199,10 @@ local function SetHeader(i, text)
   row:Show()
 end
 
-local function SetItem(i, itemID, editable)
+local function SetItem(i, itemID, editable, recipeID)
   local row = GetRow(i)
   row.itemID = itemID
+  row.recipeID = recipeID
   row.editable = editable
   row.header:SetText("")
   row.icon:SetTexture(C_Item.GetItemIconByID(itemID))
@@ -219,7 +235,7 @@ local function Render()
   if #layout.crafted > 0 then
     i = i + 1; SetHeader(i, "Craft first")
     for _, l in ipairs(layout.crafted) do
-      i = i + 1; SetItem(i, l.itemID, false)
+      i = i + 1; SetItem(i, l.itemID, false, l.recipeID)
     end
     i = i + 1; SetHeader(i, " ")
   end
