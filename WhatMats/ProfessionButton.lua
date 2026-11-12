@@ -26,6 +26,8 @@ local function Setup()
   button:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
   button:SetScript("OnEvent", UpdateEnabled)
 
+  ProfessionsFrame:HookScript("OnHide", ns.CloseIfFromProfession)
+
   hooksecurefunc(form, "Init", function(_, recipeInfo)
     selectedID = recipeInfo and recipeInfo.recipeID
     UpdateEnabled()

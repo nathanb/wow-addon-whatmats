@@ -374,6 +374,13 @@ function ns.ToggleWindow()
   window:SetShown(not window:IsShown())
 end
 
+-- Only a window the profession button opened closes with the profession frame.
+local fromProfession = false
+
+function ns.CloseIfFromProfession()
+  if fromProfession then window:Hide() end
+end
+
 function ns.IsWindowShown()
   return window:IsShown()
 end
@@ -390,11 +397,17 @@ function ns.LoadRecipe(recipeID, dockTo)
     window:SetPoint("TOPLEFT", dockTo, "TOPRIGHT", 56, 0)
     window:SetHeight(dockTo:GetHeight())
   end
-  if window:IsShown() then Render() else window:Show() end
+  if window:IsShown() then
+    Render()
+  else
+    fromProfession = dockTo ~= nil
+    window:Show()
+  end
   return true
 end
 
 window:SetScript("OnShow", Render)
+window:SetScript("OnHide", function() fromProfession = false end)
 
 hooksecurefunc("HandleModifiedItemClick", function(link)
   if link and window:IsShown() and IsModifiedClick("CHATLINK") then

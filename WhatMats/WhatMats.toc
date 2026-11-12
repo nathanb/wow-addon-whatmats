@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: WhatMats
 ## Notes: Breaks a profession recipe down into its raw materials.
-## Version: 0.5.0
+## Version: 0.5.1
 ## SavedVariablesPerCharacter: WhatMatsDB
 ## SavedVariables: WhatMatsVendorDB
 
