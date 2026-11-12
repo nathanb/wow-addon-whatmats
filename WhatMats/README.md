@@ -4,6 +4,8 @@
 
 Pick something you want to craft, tell it how many, and WhatMats breaks the recipe all the way down to the raw materials you need to gather or buy.
 
+Download it from [CurseForge](https://www.curseforge.com/wow/addons/whatmats).
+
 ## Why
 
 Many recipes need parts that are themselves crafted. That means a lot of tooltip hovering and math on paper. WhatMats does that work for you so you can see your full shopping list in one place.
