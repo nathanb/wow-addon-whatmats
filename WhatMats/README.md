@@ -34,3 +34,8 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 | `/mats list` | Show which professions have been scanned |
 | `/mats resetvendors` | Forget the vendor items WhatMats has learned |
 | `/mats help` | Show these commands |
+
+
+## Preview
+
+<img src="./art/screen-1.png" alt="Screenshot preview" />
