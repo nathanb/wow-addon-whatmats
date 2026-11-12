@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#3a2a18"/>
+      <stop offset="1" stop-color="#0d0905"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1b8"/>
+      <stop offset="0.45" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#9a6a1c"/>
+    </linearGradient>
+    <radialGradient id="node" cx="50%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#2e2318"/>
+      <stop offset="1" stop-color="#120d08"/>
+    </radialGradient>
+    <linearGradient id="potion" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fe3ff"/>
+      <stop offset="1" stop-color="#1c7fb8"/>
+    </linearGradient>
+    <linearGradient id="ore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9dde3"/>
+      <stop offset="1" stop-color="#5d6672"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f8a3a"/>
+      <stop offset="1" stop-color="#9be36a"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e3a6ff"/>
+      <stop offset="1" stop-color="#6a2aa8"/>
+    </linearGradient>
+    <radialGradient id="scorch" cx="50%" cy="45%" r="62%">
+      <stop offset="0.5" stop-color="#0d0905" stop-opacity="0"/>
+      <stop offset="0.72" stop-color="#1a0d04" stop-opacity="0.55"/>
+      <stop offset="0.85" stop-color="#0a0502" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#050302" stop-opacity="0.95"/>
+    </radialGradient>
+    <filter id="ragged" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="burn" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="4" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="5"/>
+    </filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="2"/>
+      <feColorMatrix values="0 0 0 0 0.05  0 0 0 0 0.03  0 0 0 0 0.01  0 0 0 -1.6 1.05"/>
+    </filter>
+    <filter id="speckle" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11"/>
+      <feColorMatrix values="0 0 0 0 0.75  0 0 0 0 0.6  0 0 0 0 0.38  0 0 0 2.4 -1.45"/>
+    </filter>
+    <filter id="stains" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="5" seed="4"/>
+      <feColorMatrix values="0 0 0 0 0.03  0 0 0 0 0.02  0 0 0 0 0.01  2.2 0 0 0 -1.05"/>
+    </filter>
+    <filter id="fibers" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="3" seed="9"/>
+      <feColorMatrix values="0 0 0 0 0.55  0 0 0 0 0.4  0 0 0 0 0.22  0 1.6 0 0 -0.95"/>
+    </filter>
+    <filter id="mottle" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" seed="21"/>
+      <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.31  0 0 0 0 0.16  0 2.4 0 0 -1.05"/>
+    </filter>
+    <filter id="scorchfx" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" seed="13" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="60" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <rect width="400" height="400" fill="#050302"/>
+  <rect x="5" y="5" width="390" height="390" rx="10" fill="url(#bg)" filter="url(#ragged)"/>
+  <rect width="400" height="400" filter="url(#mottle)" opacity="0.7"/>
+  <rect width="400" height="400" filter="url(#stains)" opacity="0.9"/>
+  <rect width="400" height="400" filter="url(#fibers)" opacity="0.25"/>
+  <rect width="400" height="400" filter="url(#grain)" opacity="0.5"/>
+  <rect width="400" height="400" filter="url(#speckle)" opacity="0.35"/>
+  <rect x="-30" y="-30" width="460" height="460" fill="url(#scorch)" filter="url(#scorchfx)"/>
+  <rect x="5" y="5" width="390" height="390" rx="10" fill="none" stroke="#000" stroke-width="18" filter="url(#burn)"/>
+  <rect x="5" y="5" width="390" height="390" rx="10" fill="none" stroke="#7a3410" stroke-opacity="0.45" stroke-width="4" filter="url(#burn)" transform="translate(200 200) scale(0.955) translate(-200 -200)"/>
+  <rect x="14" y="14" width="372" height="372" rx="28" fill="none" stroke="url(#gold)" stroke-width="6"/>
+  <rect x="24" y="24" width="352" height="352" rx="20" fill="none" stroke="#000" stroke-opacity="0.5" stroke-width="2"/>
+
+  <g fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 166 V196 M100 221 V206 Q100 196 110 196 H290 Q300 196 300 206 V221 M200 196 V221"/>
+  </g>
+
+  <g stroke="url(#gold)" stroke-width="5">
+    <circle cx="200" cy="118" r="48" fill="url(#node)"/>
+    <circle cx="100" cy="257" r="36" fill="url(#node)"/>
+    <circle cx="200" cy="257" r="36" fill="url(#node)"/>
+    <circle cx="300" cy="257" r="36" fill="url(#node)"/>
+  </g>
+
+  <g stroke="#0d0905" stroke-width="2.5" stroke-linejoin="round">
+    <rect x="190" y="84" width="20" height="22" rx="3" fill="#c9d6dc"/>
+    <rect x="186" y="80" width="28" height="8" rx="3" fill="#8a5a2b"/>
+    <circle cx="200" cy="128" r="26" fill="#c9d6dc" fill-opacity="0.25"/>
+    <path d="M175 132 A26 26 0 0 0 225 132 Z" fill="url(#potion)"/>
+    <circle cx="200" cy="128" r="26" fill="none"/>
+  </g>
+  <ellipse cx="190" cy="116" rx="5" ry="8" fill="#fff" fill-opacity="0.55"/>
+
+  <g stroke="#0d0905" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M78 264 L86 242 L106 234 L122 246 L121 268 L101 278 Z" fill="url(#ore)"/>
+    <path d="M86 242 L100 254 L106 234 M100 254 L121 268 M100 254 L101 278" fill="none" stroke="#3a4048" stroke-width="1.5"/>
+    <circle cx="109" cy="248" r="3" fill="#f2c14e" stroke="none"/>
+    <circle cx="90" cy="262" r="2.5" fill="#f2c14e" stroke="none"/>
+  </g>
+
+  <g stroke="#0d0905" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M180 276 C178 248 196 233 224 235 C226 262 208 278 180 276 Z" fill="url(#leaf)"/>
+    <path d="M178 280 L216 243" fill="none" stroke="#1d4f22" stroke-width="2"/>
+  </g>
+
+  <g stroke="#0d0905" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M300 228 L318 248 L309 284 L291 284 L282 248 Z" fill="url(#gem)"/>
+    <path d="M282 248 L318 248 M300 228 L294 248 L300 284 M300 228 L306 248 L300 284" fill="none" stroke="#3b1460" stroke-width="1.5"/>
+  </g>
+
+  <text x="200" y="352" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="60" fill="url(#gold)" stroke="#0d0905" stroke-width="2" paint-order="stroke" letter-spacing="1">WhatMats</text>
+</svg>
