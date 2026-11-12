@@ -36,6 +36,7 @@ local function NumberBox(parent)
   box:SetNumeric(true)
   box:SetMaxLetters(5)
   box:SetJustifyH("RIGHT")
+  box:SetTextInsets(0, 6, 0, 0)
   box:SetScript("OnEnterPressed", box.ClearFocus)
   box:SetScript("OnEscapePressed", box.ClearFocus)
   return box
