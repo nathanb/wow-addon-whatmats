@@ -45,7 +45,7 @@ local function ScanProfession()
   end
 
   if count > 0 then
-    MatBreakdownDB.recipes[prof.professionName] = recipes
+    WhatMatsDB.recipes[prof.professionName] = recipes
   end
   return prof.professionName, count
 end
@@ -91,7 +91,7 @@ function ns.FindRecipes(query)
   local unprefixed = wantName:match("^.-:%s*(.+)$") or wantName
 
   local exact, partial = {}, {}
-  for profName, recipes in pairs(MatBreakdownDB.recipes) do
+  for profName, recipes in pairs(WhatMatsDB.recipes) do
     for recipeID, r in pairs(recipes) do
       local hit = { profName = profName, recipe = r }
       local recipeName = r.name:lower()
@@ -118,7 +118,7 @@ local function SortedList(counts)
 end
 
 function ns.Compute(hit, count)
-  local byOutput = BuildProducerIndex(MatBreakdownDB.recipes[hit.profName])
+  local byOutput = BuildProducerIndex(WhatMatsDB.recipes[hit.profName])
   local raw, crafted, surplus = {}, {}, {}
   Expand(byOutput, hit.recipe.outputItemID, count * hit.recipe.made, raw, crafted, surplus, {})
   crafted[hit.recipe.outputItemID] = nil
@@ -162,8 +162,8 @@ local function PrintHelp()
   Print("/mats help  - this help")
 end
 
-SLASH_MATBREAKDOWN1 = "/mats"
-SlashCmdList.MATBREAKDOWN = function(msg)
+SLASH_WHATMATS1 = "/mats"
+SlashCmdList.WHATMATS = function(msg)
   msg = strtrim(msg or "")
   if msg == "" then
     ns.ToggleWindow()
@@ -177,7 +177,7 @@ SlashCmdList.MATBREAKDOWN = function(msg)
       Print("Open your own profession window first.")
     end
   elseif msg == "list" then
-    for profName, recipes in pairs(MatBreakdownDB.recipes) do
+    for profName, recipes in pairs(WhatMatsDB.recipes) do
       local n = 0
       for _ in pairs(recipes) do n = n + 1 end
       Print(string.format("%s: %d recipes", profName, n))
@@ -195,9 +195,8 @@ frame:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 frame:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" then
     if arg1 == ADDON then
-      -- v0.1 stored professions at the top level; discard it, the next profession-window open rescans.
-      if type(MatBreakdownDB) ~= "table" or type(MatBreakdownDB.recipes) ~= "table" then
-        MatBreakdownDB = { recipes = {} }
+      if type(WhatMatsDB) ~= "table" then
+        WhatMatsDB = { recipes = {} }
       end
       ns.InitMinimapButton()
     end

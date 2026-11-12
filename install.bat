@@ -6,8 +6,8 @@ set "WOW=%~1"
 if "%WOW%"=="" set "WOW=D:\Program Files (x86)\World of Warcraft"
 
 set "ADDONS=%WOW%\_forever_\Interface\AddOns"
-set "SRC=%~dp0MatBreakdown"
-set "LINK=%ADDONS%\MatBreakdown"
+set "SRC=%~dp0WhatMats"
+set "LINK=%ADDONS%\WhatMats"
 
 if not exist "%ADDONS%\" (
   echo AddOns folder not found: "%ADDONS%"

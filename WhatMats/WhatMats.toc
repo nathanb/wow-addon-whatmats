@@ -1,9 +1,9 @@
 ## Interface: 16001
-## Title: MatBreakdown
+## Title: WhatMats
 ## Notes: Breaks a profession recipe down into its raw materials.
-## Version: 0.2.0
-## SavedVariablesPerCharacter: MatBreakdownDB
+## Version: 0.3.0
+## SavedVariablesPerCharacter: WhatMatsDB
 
-MatBreakdown.lua
+WhatMats.lua
 UI.lua
 MinimapButton.lua

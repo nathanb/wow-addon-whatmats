@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local DEFAULT_ANGLE = 200
 local EDGE_OFFSET = 5
 
-local button = CreateFrame("Button", "MatBreakdownMinimapButton", Minimap)
+local button = CreateFrame("Button", "WhatMatsMinimapButton", Minimap)
 button:SetSize(31, 31)
 button:SetFrameStrata("MEDIUM")
 button:SetFrameLevel(8)
@@ -39,7 +39,7 @@ local function FollowCursor()
   local cx, cy = GetCursorPosition()
   local scale = Minimap:GetEffectiveScale()
   local angle = math.deg(math.atan2(cy / scale - my, cx / scale - mx))
-  MatBreakdownDB.minimapAngle = angle
+  WhatMatsDB.minimapAngle = angle
   SetAngle(angle)
 end
 
@@ -61,5 +61,5 @@ end)
 button:SetScript("OnLeave", GameTooltip_Hide)
 
 function ns.InitMinimapButton()
-  SetAngle(MatBreakdownDB.minimapAngle or DEFAULT_ANGLE)
+  SetAngle(WhatMatsDB.minimapAngle or DEFAULT_ANGLE)
 end
