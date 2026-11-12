@@ -267,8 +267,6 @@ local function GetRow(i)
       local _, link = C_Item.GetItemInfo(self.itemID)
       if link then ChatFrameUtil.InsertLink(link) end
     else
-      -- Keep showing the parent recipe when the profession window follows this click.
-      ns.ignoreSelect = self.recipeID
       C_TradeSkillUI.OpenRecipe(self.recipeID)
     end
   end)
@@ -379,10 +377,6 @@ local fromProfession = false
 
 function ns.CloseIfFromProfession()
   if fromProfession then window:Hide() end
-end
-
-function ns.IsWindowShown()
-  return window:IsShown()
 end
 
 -- Docks beside dockTo until the player drags the window somewhere else.

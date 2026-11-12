@@ -31,12 +31,6 @@ local function Setup()
   hooksecurefunc(form, "Init", function(_, recipeInfo)
     selectedID = recipeInfo and recipeInfo.recipeID
     UpdateEnabled()
-    if not selectedID then return end
-    if ns.ignoreSelect == selectedID then
-      ns.ignoreSelect = nil
-      return
-    end
-    if ns.IsWindowShown() then ns.LoadRecipe(selectedID) end
   end)
 end
 
