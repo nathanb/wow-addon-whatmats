@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5 - 2026-11-13
+
+ - Packaged for CurseForge via .pkgmeta (no addon changes).
+
 ## 0.5.4 - 2026-11-13
  - release to test auto-publish pipeline
 
