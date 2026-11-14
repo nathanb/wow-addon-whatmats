@@ -288,7 +288,61 @@ local function PrintTree(nodes, indent)
   end
 end
 
-local function PrintBreakdown(query, count)
+-- Say and Yell stay local so a stray /mats never broadcasts publicly.
+local SHAREABLE = {
+  PARTY = true, RAID = true, INSTANCE_CHAT = true, GUILD = true, OFFICER = true,
+  WHISPER = true, CHANNEL = true, BN_WHISPER = true,
+}
+
+local MAX_CHAT = 255
+
+-- Returns a function sending one line to the edit box's active chat, or nil.
+local function ChatSender(editBox)
+  local chatType = editBox and editBox.GetChatType and editBox:GetChatType()
+  if not SHAREABLE[chatType] then return end
+  if chatType == "BN_WHISPER" then
+    local target = editBox:GetTellTarget()
+    local id = BNet_GetBNetIDAccount(target)
+    if not id then
+      Print("Couldn't find Battle.net friend '" .. tostring(target) .. "', printing here instead.")
+      return
+    end
+    return function(line) C_BattleNet.SendWhisper(id, line) end
+  end
+  local target
+  if chatType == "WHISPER" then
+    target = editBox:GetTellTarget()
+  elseif chatType == "CHANNEL" then
+    target = editBox:GetChannelTarget()
+  end
+  local lang = editBox.languageID
+  return function(line) C_ChatInfo.SendChatMessage(line, chatType, lang, target) end
+end
+
+-- Shared output ignores bags and expand toggles: everything the recipe's own
+-- profession makes is broken down, anything another profession makes is not.
+local function SendBreakdown(hit, count, send)
+  local crafted = {}
+  for _, r in pairs(WhatMatsDB.recipes[hit.profName] or {}) do
+    crafted[r.outputItemID] = true
+  end
+  send(string.format("%dx %s (%s):", count, ns.ItemText(hit.recipe.outputItemID), hit.profName))
+  local line = ""
+  for _, l in ipairs(SortedList(ns.Totals(hit, count, crafted))) do
+    local entry = string.format("%dx %s", l.n, ns.ItemText(l.itemID))
+    if line == "" then
+      line = entry
+    elseif #line + 2 + #entry > MAX_CHAT then
+      send(line)
+      line = entry
+    else
+      line = line .. ", " .. entry
+    end
+  end
+  if line ~= "" then send(line) end
+end
+
+local function PrintBreakdown(query, count, editBox)
   local matches = ns.FindRecipes(query)
   if #matches == 0 then
     Print("No known recipe matches '" .. query .. "'. Open the profession window once so it can be scanned.")
@@ -303,6 +357,11 @@ local function PrintBreakdown(query, count)
   end
 
   local hit = matches[1]
+  local send = ChatSender(editBox)
+  if send then
+    SendBreakdown(hit, count, send)
+    return
+  end
   local result = ns.Compute(hit, count)
   Print(string.format("%dx %s (%s):", count, hit.recipe.name, hit.profName))
   PrintTree(result.tree, "  ")
@@ -317,7 +376,7 @@ end
 
 local function PrintHelp()
   Print("/mats  - toggle the window")
-  Print("/mats <recipe name or shift-clicked link> [count]  - print breakdown to chat")
+  Print("/mats <recipe name or shift-clicked link> [count]  - print breakdown (sent to party/raid/guild/whisper/channel when that chat mode is active)")
   Print("/mats scan  - rescan the open profession window")
   Print("/mats list  - show scanned professions")
   Print("/mats resetvendors  - forget all learned vendor items")
@@ -325,7 +384,7 @@ local function PrintHelp()
 end
 
 SLASH_WHATMATS1 = "/mats"
-SlashCmdList.WHATMATS = function(msg)
+SlashCmdList.WHATMATS = function(msg, editBox)
   msg = strtrim(msg or "")
   if msg == "" then
     ns.ToggleWindow()
@@ -350,7 +409,7 @@ SlashCmdList.WHATMATS = function(msg)
     end
   else
     local query, count = msg:match("^(.-)%s+(%d+)$")
-    PrintBreakdown(query or msg, tonumber(count) or 1)
+    PrintBreakdown(query or msg, tonumber(count) or 1, editBox)
   end
 end
 
