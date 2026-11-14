@@ -296,18 +296,43 @@ local SHAREABLE = {
 
 local MAX_CHAT = 255
 
+-- BNet_GetBNetIDAccount is missing on some clients, so fall back to the
+-- autocomplete lookup and then a scan of online friends.
+local function FindBNetID(target)
+  if not target then return end
+  if BNet_GetBNetIDAccount then
+    local id = BNet_GetBNetIDAccount(target)
+    if id then return id end
+  end
+  if C_AutoComplete and C_AutoComplete.GetAutoCompletePresenceID then
+    local id = C_AutoComplete.GetAutoCompletePresenceID(target)
+    if id then return id end
+  end
+  if not (BNGetNumFriends and C_BattleNet and C_BattleNet.GetFriendAccountInfo) then return end
+  local _, online = BNGetNumFriends()
+  for i = 1, online or 0 do
+    local info = C_BattleNet.GetFriendAccountInfo(i)
+    local game = info and info.gameAccountInfo
+    if info and (info.accountName == target or info.battleTag == target
+      or (game and game.characterName == target)) then
+      return info.bnetAccountID
+    end
+  end
+end
+
 -- Returns a function sending one line to the edit box's active chat, or nil.
 local function ChatSender(editBox)
   local chatType = editBox and editBox.GetChatType and editBox:GetChatType()
   if not SHAREABLE[chatType] then return end
   if chatType == "BN_WHISPER" then
     local target = editBox:GetTellTarget()
-    local id = BNet_GetBNetIDAccount(target)
-    if not id then
+    local id = FindBNetID(target)
+    local sendBN = C_BattleNet and C_BattleNet.SendWhisper or BNSendWhisper
+    if not id or not sendBN then
       Print("Couldn't find Battle.net friend '" .. tostring(target) .. "', printing here instead.")
       return
     end
-    return function(line) C_BattleNet.SendWhisper(id, line) end
+    return function(line) sendBN(id, line) end
   end
   local target
   if chatType == "WHISPER" then
