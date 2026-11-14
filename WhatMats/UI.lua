@@ -54,6 +54,37 @@ local qtyLabel = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 qtyLabel:SetPoint("RIGHT", qtyBox, "LEFT", -8, 0)
 qtyLabel:SetText("Qty")
 
+local function OpenOrLink(itemID, recipeID)
+  if IsModifiedClick("CHATLINK") then
+    local _, link = C_Item.GetItemInfo(itemID)
+    if link then ChatFrameUtil.InsertLink(link) end
+  else
+    C_TradeSkillUI.OpenRecipe(recipeID)
+  end
+end
+
+local function AddClickHints()
+  GameTooltip:AddLine("Click to open recipe", GREEN_FONT_COLOR:GetRGB())
+  GameTooltip:AddLine("Shift-click to link in chat", GREEN_FONT_COLOR:GetRGB())
+end
+
+local titleButton = CreateFrame("Button", nil, window)
+titleButton:SetPoint("TOPLEFT", icon, "TOPLEFT")
+titleButton:SetPoint("BOTTOM", icon, "BOTTOM")
+titleButton:SetPoint("RIGHT", qtyLabel, "LEFT", -8, 0)
+titleButton:Hide()
+titleButton:SetScript("OnClick", function()
+  OpenOrLink(current.hit.recipe.outputItemID, current.hit.recipeID)
+end)
+titleButton:SetScript("OnEnter", function(self)
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetItemByID(current.hit.recipe.outputItemID)
+  GameTooltip:AddLine(" ")
+  AddClickHints()
+  GameTooltip:Show()
+end)
+titleButton:SetScript("OnLeave", GameTooltip_Hide)
+
 local hint = window:CreateFontString(nil, "OVERLAY", "GameFontDisable")
 hint:SetPoint("CENTER", window, "CENTER", 0, 0)
 hint:SetWidth(300)
@@ -258,20 +289,14 @@ local function GetRow(i)
       if self.profName and self.profName ~= current.hit.profName then
         GameTooltip:AddLine("Crafted with " .. self.profName, HIGHLIGHT_FONT_COLOR:GetRGB())
       end
-      GameTooltip:AddLine("Click to open recipe", GREEN_FONT_COLOR:GetRGB())
-      GameTooltip:AddLine("Shift-click to link in chat", GREEN_FONT_COLOR:GetRGB())
+      AddClickHints()
     end
     GameTooltip:Show()
   end)
   row:SetScript("OnLeave", GameTooltip_Hide)
   row:SetScript("OnMouseUp", function(self, button)
     if button ~= "LeftButton" or not self.recipeID then return end
-    if IsModifiedClick("CHATLINK") then
-      local _, link = C_Item.GetItemInfo(self.itemID)
-      if link then ChatFrameUtil.InsertLink(link) end
-    else
-      C_TradeSkillUI.OpenRecipe(self.recipeID)
-    end
+    OpenOrLink(self.itemID, self.recipeID)
   end)
 
   rows[i] = row
@@ -322,6 +347,7 @@ end
 
 Render = function()
   for _, row in ipairs(rows) do row:Hide() end
+  titleButton:SetShown(current ~= nil)
   if not current then
     icon:Hide()
     title:SetText("")

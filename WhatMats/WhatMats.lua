@@ -168,7 +168,7 @@ function ns.FindRecipes(query)
   local exact, partial = {}, {}
   for profName, recipes in pairs(WhatMatsDB.recipes) do
     for recipeID, r in pairs(recipes) do
-      local hit = { profName = profName, recipe = r }
+      local hit = { profName = profName, recipeID = recipeID, recipe = r }
       local recipeName = r.name:lower()
       local itemName = (C_Item.GetItemNameByID(r.outputItemID) or ""):lower()
       if recipeID == wantRecipe or r.outputItemID == wantItem
@@ -186,7 +186,7 @@ end
 function ns.FindRecipeByID(recipeID)
   for profName, recipes in pairs(WhatMatsDB.recipes) do
     local r = recipes[recipeID]
-    if r then return { profName = profName, recipe = r } end
+    if r then return { profName = profName, recipeID = recipeID, recipe = r } end
   end
 end
 
