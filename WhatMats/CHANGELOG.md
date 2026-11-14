@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.6 - 2026-11-14
+
+ - Click the recipe title in the WhatMats window to open it in its profession window; shift-click to link it.
+ - /mats <recipe> now sends to party, raid, guild, officer, whisper, channel or Battle.net whisper when that chat mode is active. Say and yell still print locally.
+
 ## 0.5.5 - 2026-11-13
 
  - Packaged for CurseForge via .pkgmeta (no addon changes).
