@@ -296,6 +296,10 @@ local SHAREABLE = {
 
 local MAX_CHAT = 255
 
+local function ItemName(itemID)
+  return C_Item.GetItemNameByID(itemID) or ("item " .. itemID)
+end
+
 -- BNet_GetBNetIDAccount is missing on some clients, so fall back to the
 -- autocomplete lookup and then a scan of online friends.
 local function FindBNetID(target)
@@ -332,7 +336,15 @@ local function ChatSender(editBox)
       Print("Couldn't find Battle.net friend '" .. tostring(target) .. "', printing here instead.")
       return
     end
-    return function(line) sendBN(id, line) end
+    -- Battle.net rewrites links as "Item <id> <name>" for friends on another
+    -- WoW version, so only send links when their game matches ours.
+    local itemText = ItemName
+    local info = C_BattleNet and C_BattleNet.GetAccountInfoByID and C_BattleNet.GetAccountInfoByID(id)
+    local game = info and info.gameAccountInfo
+    if WOW_PROJECT_ID and game and game.wowProjectID == WOW_PROJECT_ID then
+      itemText = ns.ItemText
+    end
+    return function(line) sendBN(id, line) end, itemText
   end
   local target
   if chatType == "WHISPER" then
@@ -341,20 +353,20 @@ local function ChatSender(editBox)
     target = editBox:GetChannelTarget()
   end
   local lang = editBox.languageID
-  return function(line) C_ChatInfo.SendChatMessage(line, chatType, lang, target) end
+  return function(line) C_ChatInfo.SendChatMessage(line, chatType, lang, target) end, ns.ItemText
 end
 
 -- Shared output ignores bags and expand toggles: everything the recipe's own
 -- profession makes is broken down, anything another profession makes is not.
-local function SendBreakdown(hit, count, send)
+local function SendBreakdown(hit, count, send, itemText)
   local crafted = {}
   for _, r in pairs(WhatMatsDB.recipes[hit.profName] or {}) do
     crafted[r.outputItemID] = true
   end
-  send(string.format("%dx %s (%s):", count, ns.ItemText(hit.recipe.outputItemID), hit.profName))
+  send(string.format("%dx %s (%s):", count, itemText(hit.recipe.outputItemID), hit.profName))
   local line = ""
   for _, l in ipairs(SortedList(ns.Totals(hit, count, crafted))) do
-    local entry = string.format("%dx %s", l.n, ns.ItemText(l.itemID))
+    local entry = string.format("%dx %s", l.n, itemText(l.itemID))
     if line == "" then
       line = entry
     elseif #line + 2 + #entry > MAX_CHAT then
@@ -382,9 +394,9 @@ local function PrintBreakdown(query, count, editBox)
   end
 
   local hit = matches[1]
-  local send = ChatSender(editBox)
+  local send, itemText = ChatSender(editBox)
   if send then
-    SendBreakdown(hit, count, send)
+    SendBreakdown(hit, count, send, itemText)
     return
   end
   local result = ns.Compute(hit, count)
