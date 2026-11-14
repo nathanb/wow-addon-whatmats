@@ -1,4 +1,0 @@
-/console scriptErrors 1
-/run print("ac:", C_AutoComplete and C_AutoComplete.GetAutoCompletePresenceID, "bnfi:", C_BattleNet and C_BattleNet.GetFriendAccountInfo, "num:", BNGetNumFriends)
-/run print("send:", C_BattleNet and C_BattleNet.SendWhisper, BNSendWhisper, "ver:", GetBuildInfo())
-/run local i=C_BattleNet.GetFriendAccountInfo(1); print(i and i.bnetAccountID, i and i.accountName, i and i.gameAccountInfo and i.gameAccountInfo.characterName)
