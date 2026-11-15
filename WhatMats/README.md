@@ -16,8 +16,7 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 - **Checks what you have.** Counts what's in your bags and bank, so you only see what you're still missing.
 - **Gives you a shopping list.** The Totals list shows the base materials you still need to get.
 - **Marks vendor items.** Materials you can buy from a vendor with gold get a small vendor icon. WhatMats learns these as you visit vendors.
-- **Shows profit.** Click the Profit line to see what a craft costs and earns. Material prices come from your last vendor or AH purchase, a price you type in (silver), or Auctionator if it's installed. Check materials you gather yourself to leave them out of the cost.
-- **Shows profit.** Click the Profit line to see what a craft costs and earns. Material prices come from your last vendor or AH purchase, a price you type in (silver), or Auctionator if it's installed. Check materials you gather yourself to leave them out of the cost.
+- **Shows profit.** Click the Profit line to see what a craft costs and earns. Material prices come from your last vendor or AH purchase, a price you type in (silver or gold, picked at the top of the panel), or Auctionator if it's installed. Check materials you gather yourself to leave them out of the cost.
 - **Opens from your profession window.** Click the WhatMats button next to a recipe, or shift-click an item or recipe to load it.
 
 ## How to use it
