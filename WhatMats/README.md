@@ -60,3 +60,11 @@ Check the box next to a material you gather or make yourself to leave it out of 
 ## Preview
 
 <img src="https://raw.githubusercontent.com/nathanb/wow-addon-whatmats/main/art/screen-1.png" alt="Screenshot preview" />
+
+The Profit line shows what a craft makes at a glance.
+
+<img src="https://raw.githubusercontent.com/nathanb/wow-addon-whatmats/main/art/screen-2.png" alt="WhatMats window with the Profit line" />
+
+Open it for the full breakdown, here using Auctionator prices.
+
+<img src="https://raw.githubusercontent.com/nathanb/wow-addon-whatmats/main/art/screen-3-auctionator.png" alt="Profit breakdown panel with Auctionator prices" />
