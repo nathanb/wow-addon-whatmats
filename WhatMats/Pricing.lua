@@ -163,6 +163,19 @@ local function RecordSeen(itemID, copper)
   ns.RefreshWindow()
 end
 
+-- Browse rows carry each item's lowest unit price but can't exclude our own
+-- listings, so rows containing ours are left for the item drill-down to record.
+local function RecordBrowse(results)
+  local any = false
+  for _, r in ipairs(results or {}) do
+    if not r.containsOwnerItem and r.minPrice and r.minPrice > 0 then
+      WhatMatsPriceDB.seen[r.itemKey.itemID] = { copper = r.minPrice, time = time() }
+      any = true
+    end
+  end
+  if any then ns.RefreshWindow() end
+end
+
 local function LowestCommodity(itemID)
   local low
   for i = 1, C_AuctionHouse.GetNumCommoditySearchResults(itemID) do
@@ -189,7 +202,11 @@ end
 
 local events = CreateFrame("Frame")
 events:SetScript("OnEvent", function(_, event, arg1, arg2)
-  if event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
+  if event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" then
+    RecordBrowse(C_AuctionHouse.GetBrowseResults())
+  elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then
+    RecordBrowse(arg1)
+  elseif event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
     RecordSeen(arg1, LowestCommodity(arg1))
   elseif event == "ITEM_SEARCH_RESULTS_UPDATED" then
     RecordSeen(arg1.itemID, LowestItem(arg1))
@@ -211,7 +228,8 @@ end)
 function ns.InitPricing()
   HookAuctionHouse()
   HookMerchant()
-  for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED",
+  for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
+    "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED",
     "AUCTION_HOUSE_PURCHASE_COMPLETED", "COMMODITY_PRICE_UPDATED",
     "COMMODITY_PURCHASE_SUCCEEDED", "COMMODITY_PURCHASE_FAILED" }) do
     events:RegisterEvent(e)

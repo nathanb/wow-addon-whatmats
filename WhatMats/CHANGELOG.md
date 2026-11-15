@@ -7,7 +7,7 @@
  - Materials sold by a vendor always use the vendor price: your last vendor purchase, else the price listed when you last visited one.
  - Check a material as self-sourced to leave it out of the cost.
  - Set a sale price for the crafted item, or use Auctionator's AH price. The 5% AH cut can be deducted.
- - Without Auctionator, WhatMats remembers the lowest AH listing each time you view an item on the auction house and uses it for sale prices and material costs.
+ - Without Auctionator, WhatMats remembers the lowest AH listing each time an item shows up in your auction house searches and uses it for sale prices and material costs.
 
 ## 0.5.7 - 2026-11-15
 
