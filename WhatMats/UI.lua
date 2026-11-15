@@ -108,9 +108,28 @@ hint:SetPoint("CENTER", window, "CENTER", 0, 0)
 hint:SetWidth(300)
 hint:SetText("Shift-click an item in your bags or a recipe in your profession window to load it.")
 
+local profitButton = CreateFrame("Button", nil, window)
+profitButton:SetPoint("TOPLEFT", 14, -74)
+profitButton:SetPoint("RIGHT", window, "RIGHT", -14, 0)
+profitButton:SetHeight(18)
+profitButton:Hide()
+profitButton.toggle = profitButton:CreateTexture(nil, "ARTWORK")
+profitButton.toggle:SetSize(14, 14)
+profitButton.toggle:SetPoint("LEFT", 0, 0)
+profitButton.text = profitButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+profitButton.text:SetPoint("LEFT", profitButton.toggle, "RIGHT", 6, 0)
+profitButton.text:SetPoint("RIGHT")
+profitButton.text:SetJustifyH("LEFT")
+
+local panel = CreateFrame("Frame", nil, window)
+panel:SetPoint("TOPLEFT", profitButton, "BOTTOMLEFT", 0, -2)
+panel:SetPoint("RIGHT", window, "RIGHT", -14, 0)
+panel:Hide()
+local panelBg = panel:CreateTexture(nil, "BACKGROUND")
+panelBg:SetAllPoints()
+panelBg:SetColorTexture(0, 0, 0, 0.35)
+
 local scroll = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
-scroll:SetPoint("TOPLEFT", 12, -82)
-scroll:SetPoint("BOTTOMRIGHT", -32, 10)
 local content = CreateFrame("Frame", nil, scroll)
 content:SetSize(330, 1)
 scroll:SetScrollChild(content)
@@ -169,6 +188,272 @@ local function HaveText(itemID, need, covered)
   return color:WrapTextInColorCode(text) .. " /"
 end
 
+local PROFIT_ROW = 20
+local FOOT_LINE = 16
+local panelOpen = false
+local priceRows = {}
+local UpdateProfit
+
+local SOURCE_TAG = {
+  manual = "set", ah = "AH", vendor = "vend", auctionator = "scan", ["auctionator-vendor"] = "scan",
+  seen = "low",
+}
+
+local function DaysAgo(seconds)
+  local days = math.floor(seconds / 86400)
+  if days == 0 then return "today" end
+  return days == 1 and "1 day ago" or (days .. " days ago")
+end
+
+local function SourceText(src, age, when)
+  if src == "manual" then return "Your price" end
+  if src == "ah" then return "Last AH purchase, " .. DaysAgo(time() - when) end
+  if src == "vendor" then return "Last vendor purchase, " .. DaysAgo(time() - when) end
+  if src == "seen" then return "Lowest AH listing when you last viewed it, " .. DaysAgo(time() - when) end
+  if src == "auctionator-vendor" then return "Auctionator vendor price" end
+  if src == "auctionator" then
+    return "Auctionator AH scan, " .. (age and DaysAgo(age * 86400) or "over 21 days ago")
+  end
+  return "No price. Type one in silver, or buy it once."
+end
+
+local STALE_DAYS = 7
+
+local function Stale(src, age, when)
+  if src == "auctionator" then return age == nil or age > STALE_DAYS end
+  if src == "seen" then return time() - when > STALE_DAYS * 86400 end
+  return false
+end
+
+local function PriceDB(row)
+  return row.isOutput and WhatMatsPriceDB.sale or WhatMatsPriceDB.cost
+end
+
+local function PriceRowTooltip(self)
+  local row = self.itemID and self or self:GetParent()
+  if not row.itemID then return end
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetItemByID(row.itemID)
+  GameTooltip:AddLine(" ")
+  GameTooltip:AddLine(SourceText(row.src, row.age, row.when), HIGHLIGHT_FONT_COLOR:GetRGB())
+  if row.short and row.short > 0 and not row.self then
+    GameTooltip:AddLine("Need to buy " .. row.short, HIGHLIGHT_FONT_COLOR:GetRGB())
+  end
+  GameTooltip:AddLine("Type a price in silver; right-click the box to clear it", GREEN_FONT_COLOR:GetRGB())
+  if not row.isOutput then
+    GameTooltip:AddLine("Check the box if you gather or make it yourself", GREEN_FONT_COLOR:GetRGB())
+  end
+  GameTooltip:Show()
+end
+
+local function GetPriceRow(i)
+  local row = priceRows[i]
+  if row then return row end
+
+  row = CreateFrame("Frame", nil, panel)
+  row:SetHeight(PROFIT_ROW)
+  row:SetPoint("TOPLEFT", 4, -4 - (i - 1) * PROFIT_ROW)
+  row:SetPoint("RIGHT", panel, "RIGHT", -4, 0)
+  row:EnableMouse(true)
+  row:SetScript("OnEnter", PriceRowTooltip)
+  row:SetScript("OnLeave", GameTooltip_Hide)
+
+  row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+  row.check:SetSize(20, 20)
+  row.check:SetPoint("LEFT", 0, 0)
+  row.check:SetScript("OnClick", function(self)
+    WhatMatsPriceDB.self[row.itemID] = self:GetChecked() or nil
+    UpdateProfit()
+  end)
+  row.check:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("Self-sourced")
+    GameTooltip:AddLine("Leave this material out of the cost", HIGHLIGHT_FONT_COLOR:GetRGB())
+    GameTooltip:Show()
+  end)
+  row.check:SetScript("OnLeave", GameTooltip_Hide)
+
+  row.icon = row:CreateTexture(nil, "ARTWORK")
+  row.icon:SetSize(14, 14)
+  row.icon:SetPoint("LEFT", row.check, "RIGHT", 2, 0)
+
+  row.subtotal = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  row.subtotal:SetPoint("RIGHT", -2, 0)
+  row.subtotal:SetWidth(62)
+  row.subtotal:SetJustifyH("RIGHT")
+
+  row.tag = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  row.tag:SetPoint("RIGHT", row.subtotal, "LEFT", -2, 0)
+  row.tag:SetWidth(30)
+  row.tag:SetJustifyH("LEFT")
+
+  row.box = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+  row.box:SetSize(52, 18)
+  row.box:SetPoint("RIGHT", row.tag, "LEFT", -4, 0)
+  row.box:SetAutoFocus(false)
+  row.box:SetMaxLetters(9)
+  row.box:SetJustifyH("RIGHT")
+  row.box:SetTextInsets(0, 6, 0, 0)
+  row.box:SetScript("OnEnterPressed", row.box.ClearFocus)
+  row.box:SetScript("OnEscapePressed", row.box.ClearFocus)
+  row.box:SetScript("OnTextChanged", function(self, userInput)
+    if not userInput then return end
+    local text = strtrim(self:GetText())
+    if text == "" then
+      PriceDB(row)[row.itemID] = nil
+    else
+      local copper = ns.ParseSilver(text)
+      if not copper then return end
+      PriceDB(row)[row.itemID] = copper
+    end
+    UpdateProfit()
+  end)
+  row.box:SetScript("OnEditFocusLost", function() UpdateProfit() end)
+  row.box:SetScript("OnMouseDown", function(self, button)
+    if button ~= "RightButton" then return end
+    PriceDB(row)[row.itemID] = nil
+    self:ClearFocus()
+    UpdateProfit()
+  end)
+  row.box:SetScript("OnEnter", PriceRowTooltip)
+  row.box:SetScript("OnLeave", GameTooltip_Hide)
+
+  row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  row.name:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
+  row.name:SetPoint("RIGHT", row.box, "LEFT", -10, 0)
+  row.name:SetJustifyH("LEFT")
+  row.name:SetWordWrap(false)
+
+  priceRows[i] = row
+  return row
+end
+
+local function FootLine()
+  local left = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local right = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  left:SetJustifyH("LEFT")
+  right:SetJustifyH("RIGHT")
+  return { left = left, right = right }
+end
+
+local foot = { revenue = FootLine(), cost = FootLine(), net = FootLine(), ratio = FootLine() }
+foot.revenue.left:SetText("Revenue")
+foot.cost.left:SetText("Cost to buy")
+foot.net.left:SetText("Net")
+foot.ratio.left:SetText("Ratio")
+local FOOT_ORDER = { foot.revenue, foot.cost, foot.net, foot.ratio }
+
+local ahCut = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+ahCut:SetSize(20, 20)
+ahCut.label = ahCut:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+ahCut.label:SetPoint("LEFT", ahCut, "RIGHT", 2, 0)
+ahCut.label:SetText("Deduct 5% AH cut from revenue")
+ahCut:SetScript("OnClick", function(self)
+  WhatMatsPriceDB.ahCut = self:GetChecked()
+  UpdateProfit()
+end)
+
+local function Layout()
+  local open = current ~= nil and panelOpen
+  panel:SetShown(open)
+  profitButton.toggle:SetTexture("Interface\\Buttons\\UI-" .. (open and "Minus" or "Plus") .. "Button-Up")
+  scroll:ClearAllPoints()
+  if current == nil then
+    scroll:SetPoint("TOPLEFT", 12, -82)
+  else
+    scroll:SetPoint("TOPLEFT", open and panel or profitButton, "BOTTOMLEFT", -2, -6)
+  end
+  scroll:SetPoint("BOTTOMRIGHT", -32, 10)
+end
+
+profitButton:SetScript("OnClick", function()
+  panelOpen = not panelOpen
+  Layout()
+end)
+
+local function RenderProfit()
+  for _, row in ipairs(priceRows) do row:Hide() end
+  local i = 1
+  local out = GetPriceRow(i)
+  out.itemID = current.hit.recipe.outputItemID
+  out.isOutput = true
+  out.check:Hide()
+  out:Show()
+  for _, l in ipairs(plan.totals) do
+    i = i + 1
+    local row = GetPriceRow(i)
+    row.itemID = l.itemID
+    row.isOutput = false
+    row.check:Show()
+    row:Show()
+  end
+
+  local y = -4 - i * PROFIT_ROW - 4
+  for _, line in ipairs(FOOT_ORDER) do
+    line.left:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, y)
+    line.right:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -6, y)
+    y = y - FOOT_LINE
+  end
+  ahCut:SetPoint("TOPLEFT", panel, "TOPLEFT", 4, y + 2)
+  panel:SetHeight(-y + 22)
+end
+
+local function Money(copper, signed)
+  if not copper then return RED_FONT_COLOR:WrapTextInColorCode("?") end
+  if not signed then return ns.FormatSilver(copper) end
+  local text = (copper >= 0 and "+" or "-") .. ns.FormatSilver(math.abs(copper))
+  return (copper >= 0 and GREEN_FONT_COLOR or RED_FONT_COLOR):WrapTextInColorCode(text)
+end
+
+local function SetPriceRow(row, n, unit, src, age, when, subtotal)
+  row.src, row.age, row.when = src, age, when
+  row.icon:SetTexture(C_Item.GetItemIconByID(row.itemID))
+  row.name:SetText(n .. " x " .. ns.ItemText(row.itemID))
+  if not row.box:HasFocus() then
+    row.box:SetText(unit and string.format("%.2f", unit / 100) or "")
+    if src == "manual" then row.box:SetTextColor(1, 1, 1) else row.box:SetTextColor(0.6, 0.6, 0.6) end
+  end
+  local tag = SOURCE_TAG[src] or ""
+  row.tag:SetText(Stale(src, age, when) and ORANGE_FONT_COLOR:WrapTextInColorCode(tag) or tag)
+  row.subtotal:SetText(subtotal)
+end
+
+UpdateProfit = function()
+  if not current then return end
+  local p = ns.Profit(current.hit, current.count, plan.totals)
+
+  for _, row in ipairs(priceRows) do
+    if row:IsShown() then
+      if row.isOutput then
+        row.short = nil
+        SetPriceRow(row, p.made, p.sale, p.saleSrc, p.saleAge, nil, Money(p.revenue))
+      else
+        local l = p.lines[row.itemID] or { n = 0, short = 0 }
+        row.short, row.self = l.short, l.self
+        row.check:SetChecked(l.self)
+        local subtotal = l.self and GRAY_FONT_COLOR:WrapTextInColorCode("self") or Money(l.market)
+        SetPriceRow(row, l.n, l.unit, l.src, l.age, l.time, subtotal)
+      end
+    end
+  end
+
+  ahCut:SetChecked(WhatMatsPriceDB.ahCut)
+  foot.revenue.right:SetText(Money(p.revenue))
+  foot.cost.right:SetText(Money(p.cash) .. GRAY_FONT_COLOR:WrapTextInColorCode("  (market " .. ns.FormatSilver(p.market) .. ")"))
+  foot.net.right:SetText(p.net and Money(p.net, true) or Money(nil))
+  local ratio = p.ratio and string.format("%.2f", p.ratio) or (p.revenue and "no cost" or "?")
+  foot.ratio.right:SetText(ratio)
+
+  local summary
+  if not p.revenue then
+    summary = GRAY_FONT_COLOR:WrapTextInColorCode("Profit: set a sale price")
+  else
+    summary = "Profit " .. Money(p.net, true) .. "   ratio " .. ratio
+    if p.missing then summary = summary .. GRAY_FONT_COLOR:WrapTextInColorCode("  (missing prices)") end
+  end
+  profitButton.text:SetText(summary)
+end
+
 local function UpdateValues()
   local recipe = current.hit.recipe
   local suffix = recipe.made > 1 and (" - makes " .. current.count * recipe.made) or ""
@@ -191,6 +476,7 @@ local function UpdateValues()
       end
     end
   end
+  UpdateProfit()
 end
 
 local Render
@@ -198,6 +484,9 @@ local Render
 local function Editing()
   for _, row in ipairs(rows) do
     if row:IsShown() and row.input:HasFocus() then return true end
+  end
+  for _, row in ipairs(priceRows) do
+    if row:IsShown() and row.box:HasFocus() then return true end
   end
   return false
 end
@@ -366,6 +655,8 @@ end
 Render = function()
   for _, row in ipairs(rows) do row:Hide() end
   titleButton:SetShown(current ~= nil)
+  profitButton:SetShown(current ~= nil)
+  Layout()
   if not current then
     icon:Hide()
     title:SetText("")
@@ -394,6 +685,7 @@ Render = function()
     i = i + 1; SetItem(i, l.itemID, "total:" .. l.itemID, 0, l.recipeID, nil, true)
   end
   content:SetHeight(i * ROW_HEIGHT)
+  RenderProfit()
   UpdateValues()
 end
 

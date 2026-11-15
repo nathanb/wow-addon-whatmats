@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+ - Profit line at the top of the WhatMats window. Click it to see revenue, cost to buy, net and ratio for the recipe shown.
+ - Material costs come from your last vendor or AH purchase, a price you type in (silver), or Auctionator's scan if it's installed.
+ - Check a material as self-sourced to leave it out of the cost.
+ - Set a sale price for the crafted item, or use Auctionator's AH price. The 5% AH cut can be deducted.
+ - Without Auctionator, WhatMats remembers the lowest AH listing each time you view an item on the auction house and uses it for sale prices and material costs.
+
 ## 0.5.7 - 2026-11-15
 
  - Clicking a recipe in WhatMats now selects it in the profession window even when that profession is already open.
