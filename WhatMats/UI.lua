@@ -453,7 +453,7 @@ UpdateProfit = function()
     if row:IsShown() then
       if row.isOutput then
         row.short = nil
-        SetPriceRow(row, p.made, p.sale, p.saleSrc, p.saleAge, nil, Money(p.revenue))
+        SetPriceRow(row, p.made, p.sale, p.saleSrc, p.saleAge, p.saleTime, Money(p.revenue))
       else
         local l = p.lines[row.itemID] or { n = 0, short = 0 }
         row.short, row.self = l.short, l.self

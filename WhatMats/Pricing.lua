@@ -63,7 +63,7 @@ function ns.Profit(hit, count, totals)
   local db = WhatMatsPriceDB
   local outputID = hit.recipe.outputItemID
   local p = { outputID = outputID, made = count * hit.recipe.made, lines = {}, cash = 0, market = 0 }
-  p.sale, p.saleSrc, p.saleAge = ns.SalePrice(outputID)
+  p.sale, p.saleSrc, p.saleAge, p.saleTime = ns.SalePrice(outputID)
   p.missing = p.sale == nil
   if p.sale then
     p.revenue = p.sale * p.made * (db.ahCut and (1 - AH_CUT) or 1)
