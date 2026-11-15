@@ -40,7 +40,7 @@ WhatMats picks up prices as you play:
 
 - **Vendors:** what you paid the last time you bought from a vendor, or the vendor's price the last time you visited one. Items a vendor sells always use the vendor price.
 - **Auction house:** what you paid the last time you bought on the AH, and the lowest price each time an item shows up in your AH searches.
-- **Auctionator:** its scanned prices, if you have it installed. WhatMats works fine without it.
+- **Auctionator:** its scanned prices, if you have it installed. When your own AH searches have a price too, the newer one is used. WhatMats works fine without it.
 - **You:** type a price into any box to set it yourself. Right-click the box to clear it.
 
 Check the box next to a material you gather or make yourself to leave it out of the cost. Pick silver or gold at the top of the panel to choose how prices are shown and typed.
