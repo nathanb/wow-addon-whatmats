@@ -259,8 +259,13 @@ local function GetPriceRow(i)
   row:EnableMouse(true)
   row:SetScript("OnEnter", PriceRowTooltip)
   row:SetScript("OnLeave", GameTooltip_Hide)
+  row:SetScript("OnMouseUp", function(self, button)
+    if button == "LeftButton" and self.itemID and IsModifiedClick("CHATLINK") then
+      OpenOrLink(self.itemID)
+    end
+  end)
 
-  row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+  row.check =CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
   row.check:SetSize(20, 20)
   row.check:SetPoint("LEFT", 0, 0)
   row.check:SetScript("OnClick", function(self)
@@ -626,8 +631,10 @@ local function GetRow(i)
   end)
   row:SetScript("OnLeave", GameTooltip_Hide)
   row:SetScript("OnMouseUp", function(self, button)
-    if button ~= "LeftButton" or not self.recipeID then return end
-    OpenOrLink(self.itemID, self.recipeID)
+    if button ~= "LeftButton" or not self.itemID then return end
+    if self.recipeID or IsModifiedClick("CHATLINK") then
+      OpenOrLink(self.itemID, self.recipeID)
+    end
   end)
 
   rows[i] = row
