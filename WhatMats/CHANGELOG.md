@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - Clearing or lowering a quantity box no longer drops the count to 0, which hid crafted materials from Totals.
+
 ## 0.5.9 - 2026-11-15
 
  - When Auctionator and your own auction house searches both have a price for an item, WhatMats now uses the newer one.
