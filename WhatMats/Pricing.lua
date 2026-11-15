@@ -143,14 +143,21 @@ local function HookAuctionHouse()
   end)
 end
 
+-- Copper per unit for a gold-only merchant slot, or nil.
+function ns.MerchantUnitPrice(index)
+  local info = C_MerchantFrame.GetItemInfo(index)
+  if not info or info.hasExtendedCost or not info.price or info.price <= 0 then return end
+  return info.price / math.max(info.stackCount or 1, 1)
+end
+
 -- The hook runs when the purchase is requested, so a buy that then fails
 -- (full bags, too little gold) is still recorded.
 local function HookMerchant()
   hooksecurefunc("BuyMerchantItem", function(index)
     local itemID = GetMerchantItemID(index)
-    local _, _, price, stack, _, _, _, extendedCost = GetMerchantItemInfo(index)
-    if itemID and price and price > 0 and not extendedCost and GetMerchantItemCostInfo(index) == 0 then
-      Record(itemID, price / math.max(stack or 1, 1), "vendor")
+    local copper = ns.MerchantUnitPrice(index)
+    if itemID and copper and GetMerchantItemCostInfo(index) == 0 then
+      Record(itemID, copper, "vendor")
     end
   end)
 end

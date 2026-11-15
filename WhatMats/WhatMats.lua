@@ -273,9 +273,8 @@ local function ScanMerchant()
         WhatMatsVendorDB[itemID] = true
         changed = true
       end
-      local _, _, price, stack = GetMerchantItemInfo(i)
-      if price and price > 0 then
-        local copper = price / math.max(stack or 1, 1)
+      local copper = ns.MerchantUnitPrice(i)
+      if copper then
         local listed = WhatMatsPriceDB.vendor[itemID]
         if not listed or listed.copper ~= copper then changed = true end
         WhatMatsPriceDB.vendor[itemID] = { copper = copper, time = time() }
