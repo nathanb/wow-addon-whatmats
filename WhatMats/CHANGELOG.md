@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.7 - 2026-11-15
+
+ - Clicking a recipe in WhatMats now selects it in the profession window even when that profession is already open.
+
 ## 0.5.6 - 2026-11-14
 
  - Click the recipe title in the WhatMats window to open it in its profession window; shift-click to link it.
