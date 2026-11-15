@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - When Auctionator and your own auction house searches both have a price for an item, WhatMats now uses the newer one.
+
 ## 0.5.8 - 2026-11-15
 
  - Profit line at the top of the WhatMats window. Click it to see revenue, cost to buy, net and ratio for the recipe shown.

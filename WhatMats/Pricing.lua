@@ -16,8 +16,16 @@ local function Record(itemID, copper, src)
   ns.RefreshWindow()
 end
 
-local function Seen(itemID)
+-- Auctionator's scan or our lowest listing seen on the AH, whichever is newer.
+-- Auctionator reports age only in whole days (nil past 21), so a same-day tie goes to ours.
+local function MarketPrice(api, itemID)
   local seen = WhatMatsPriceDB.seen[itemID]
+  local scan = api and api.GetAuctionPriceByItemID(ADDON, itemID)
+  if scan then
+    local age = api.GetAuctionAgeByItemID(ADDON, itemID)
+    local seenAge = seen and math.floor((time() - seen.time) / 86400)
+    if not seen or (age and age < seenAge) then return scan, "auctionator", age end
+  end
   if seen then return seen.copper, "seen", nil, seen.time end
 end
 
@@ -39,22 +47,13 @@ function ns.UnitPrice(itemID)
   local atrVendor = api and api.GetVendorPriceByItemID(ADDON, itemID)
   if atrVendor then return atrVendor, "auctionator-vendor" end
   if bought.ah then return bought.ah.copper, "ah", nil, bought.ah.time end
-  if api then
-    local ah = api.GetAuctionPriceByItemID(ADDON, itemID)
-    if ah then return ah, "auctionator", api.GetAuctionAgeByItemID(ADDON, itemID) end
-  end
-  return Seen(itemID)
+  return MarketPrice(api, itemID)
 end
 
 function ns.SalePrice(itemID)
   local manual = WhatMatsPriceDB.sale[itemID]
   if manual then return manual, "manual" end
-  local api = AuctionatorAPI()
-  if api then
-    local ah = api.GetAuctionPriceByItemID(ADDON, itemID)
-    if ah then return ah, "auctionator", api.GetAuctionAgeByItemID(ADDON, itemID) end
-  end
-  return Seen(itemID)
+  return MarketPrice(AuctionatorAPI(), itemID)
 end
 
 -- Cash cost prices only what bags + bank can't cover; market cost prices all of it.
