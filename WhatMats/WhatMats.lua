@@ -466,7 +466,14 @@ frame:SetScript("OnEvent", function(_, event, arg1)
       if type(WhatMatsVendorDB) ~= "table" then
         WhatMatsVendorDB = {}
       end
+      if type(WhatMatsPriceDB) ~= "table" then
+        WhatMatsPriceDB = { ahCut = true }
+      end
+      for _, k in ipairs({ "cost", "sale", "last", "self", "seen" }) do
+        WhatMatsPriceDB[k] = WhatMatsPriceDB[k] or {}
+      end
       ns.InitMinimapButton()
+      ns.InitPricing()
     end
   elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then
     ScanMerchant()
