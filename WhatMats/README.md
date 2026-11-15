@@ -16,8 +16,9 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 - **Checks what you have.** Counts what's in your bags and bank, so you only see what you're still missing.
 - **Gives you a shopping list.** The Totals list shows the base materials you still need to get.
 - **Marks vendor items.** Materials you can buy from a vendor with gold get a small vendor icon. WhatMats learns these as you visit vendors.
-- **Shows profit.** Click the Profit line to see what a craft costs and earns. Material prices come from your last vendor or AH purchase, a price you type in (silver or gold, picked at the top of the panel), or Auctionator if it's installed. Check materials you gather yourself to leave them out of the cost.
+- **Shows profit.** See what a craft costs, what it sells for, and whether it's worth making.
 - **Opens from your profession window.** Click the WhatMats button next to a recipe, or shift-click an item or recipe to load it.
+- **Searches the auction house for you.** Shift-click any item in the WhatMats window while the auction house is open to search for it.
 
 ## How to use it
 
@@ -26,6 +27,23 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 3. Shift-click an item in your bags or a recipe in your profession window.
 4. Set how many you want to make.
 5. Check the Totals list to see what you still need.
+
+## Checking profit
+
+Click the **Profit** line under the recipe name to open the price breakdown. It shows:
+
+- **Revenue:** what the crafted items sell for on the auction house, minus the 5% AH cut (you can turn the cut off).
+- **Cost to buy:** what you'd spend on the materials you don't already have.
+- **Net and ratio:** what you make, and how many times your cost you get back. A ratio of 1.0 means you break even.
+
+WhatMats picks up prices as you play:
+
+- **Vendors:** what you paid the last time you bought from a vendor, or the vendor's price the last time you visited one. Items a vendor sells always use the vendor price.
+- **Auction house:** what you paid the last time you bought on the AH, and the lowest price each time an item shows up in your AH searches.
+- **Auctionator:** its scanned prices, if you have it installed. WhatMats works fine without it.
+- **You:** type a price into any box to set it yourself. Right-click the box to clear it.
+
+Check the box next to a material you gather or make yourself to leave it out of the cost. Pick silver or gold at the top of the panel to choose how prices are shown and typed.
 
 ## Commands
 
