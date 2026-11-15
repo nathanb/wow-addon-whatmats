@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.9 - 2026-11-15
 
  - When Auctionator and your own auction house searches both have a price for an item, WhatMats now uses the newer one.
 
