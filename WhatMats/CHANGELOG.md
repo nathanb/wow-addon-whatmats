@@ -3,6 +3,7 @@
 ## Unreleased
 
  - Clearing or lowering a quantity box no longer drops the count to 0, which hid crafted materials from Totals.
+ - Tab and Shift-Tab move between the WhatMats input boxes.
 
 ## 0.5.9 - 2026-11-15
 

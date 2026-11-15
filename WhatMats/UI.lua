@@ -2,6 +2,7 @@ local ADDON, ns = ...
 
 local ROW_HEIGHT = 22
 local current -- { hit = ..., count = n }
+local TabFocus
 
 local window = CreateFrame("Frame", "WhatMatsFrame", UIParent, "BasicFrameTemplateWithInset")
 window:SetSize(380, 440)
@@ -43,6 +44,7 @@ local function NumberBox(parent)
   box:SetTextInsets(0, 6, 0, 0)
   box:SetScript("OnEnterPressed", box.ClearFocus)
   box:SetScript("OnEscapePressed", box.ClearFocus)
+  box:SetScript("OnTabPressed", function(self) TabFocus(self) end)
   return box
 end
 
@@ -303,6 +305,7 @@ local function GetPriceRow(i)
   row.box:SetTextInsets(0, 6, 0, 0)
   row.box:SetScript("OnEnterPressed", row.box.ClearFocus)
   row.box:SetScript("OnEscapePressed", row.box.ClearFocus)
+  row.box:SetScript("OnTabPressed", function(self) TabFocus(self) end)
   row.box:SetScript("OnTextChanged", function(self, userInput)
     if not userInput then return end
     local text = strtrim(self:GetText())
@@ -518,6 +521,30 @@ local function Editing()
     if row:IsShown() and row.box:HasFocus() then return true end
   end
   return false
+end
+
+-- Visible inputs in screen order; the price boxes drop out while the profit panel is collapsed.
+local function Inputs()
+  local list = { qtyBox }
+  for _, row in ipairs(priceRows) do
+    if row.box:IsVisible() then table.insert(list, row.box) end
+  end
+  for _, row in ipairs(rows) do
+    if row.input:IsVisible() then table.insert(list, row.input) end
+  end
+  return list
+end
+
+-- Clear focus first: a Totals input's focus loss re-renders and rehides rows,
+-- which would drop focus already moved to the next box.
+TabFocus = function(self)
+  self:ClearFocus()
+  local list = Inputs()
+  local i = tIndexOf(list, self)
+  if not i then return end
+  local nextBox = list[(i - 1 + (IsShiftKeyDown() and -1 or 1)) % #list + 1]
+  nextBox:SetFocus()
+  nextBox:HighlightText()
 end
 
 -- Rebuilding rows mid-edit would move the focused input to another item.
