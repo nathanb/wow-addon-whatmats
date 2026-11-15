@@ -93,13 +93,34 @@ function ns.Profit(hit, count, totals)
   return p
 end
 
-function ns.FormatSilver(copper)
-  return string.format("%.2fs", copper / 100)
+local UNITS = {
+  silver = { copper = 100, suffix = "s", decimals = 2 },
+  -- Four decimals keeps copper precision; trailing zeros past two are trimmed.
+  gold = { copper = 10000, suffix = "g", decimals = 4 },
+}
+
+local function Unit()
+  return UNITS[WhatMatsPriceDB.unit] or UNITS.silver
 end
 
-function ns.ParseSilver(text)
-  local silver = tonumber(text)
-  if silver and silver >= 0 then return math.floor(silver * 100 + 0.5) end
+function ns.UnitName()
+  return UNITS[WhatMatsPriceDB.unit] and WhatMatsPriceDB.unit or "silver"
+end
+
+-- Number in the chosen unit, without suffix.
+function ns.FormatAmount(copper)
+  local u = Unit()
+  local text = string.format("%." .. u.decimals .. "f", copper / u.copper)
+  return (text:gsub("(%.%d%d%d-)0+$", "%1"))
+end
+
+function ns.FormatMoney(copper)
+  return ns.FormatAmount(copper) .. Unit().suffix
+end
+
+function ns.ParseMoney(text)
+  local amount = tonumber(text)
+  if amount and amount >= 0 then return math.floor(amount * Unit().copper + 0.5) end
 end
 
 -- Item auctions are bought on PlaceBid and confirmed by AUCTION_HOUSE_PURCHASE_COMPLETED.

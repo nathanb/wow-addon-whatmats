@@ -190,12 +190,13 @@ end
 
 local PROFIT_ROW = 20
 local FOOT_LINE = 16
+local PANEL_TOP = 24
 local panelOpen = false
 local priceRows = {}
 local UpdateProfit
 
 local SOURCE_TAG = {
-  manual = "set", ah = "AH", vendor = "vend", auctionator = "scan", ["auctionator-vendor"] = "scan",
+  manual = "set", ah = "AH", vendor = "vend", auctionator = "scan", ["auctionator-vendor"] = "vend",
   seen = "low", ["vendor-list"] = "vend",
 }
 
@@ -215,7 +216,7 @@ local function SourceText(src, age, when)
   if src == "auctionator" then
     return "Auctionator AH scan, " .. (age and DaysAgo(age * 86400) or "over 21 days ago")
   end
-  return "No price. Type one in silver, or buy it once."
+  return "No price. Type one in " .. ns.UnitName() .. ", or buy it once."
 end
 
 local STALE_DAYS = 7
@@ -240,7 +241,7 @@ local function PriceRowTooltip(self)
   if row.short and row.short > 0 and not row.self then
     GameTooltip:AddLine("Need to buy " .. row.short, HIGHLIGHT_FONT_COLOR:GetRGB())
   end
-  GameTooltip:AddLine("Type a price in silver; right-click the box to clear it", GREEN_FONT_COLOR:GetRGB())
+  GameTooltip:AddLine("Type a price in " .. ns.UnitName() .. "; right-click the box to clear it", GREEN_FONT_COLOR:GetRGB())
   if not row.isOutput then
     GameTooltip:AddLine("Check the box if you gather or make it yourself", GREEN_FONT_COLOR:GetRGB())
   end
@@ -253,7 +254,7 @@ local function GetPriceRow(i)
 
   row = CreateFrame("Frame", nil, panel)
   row:SetHeight(PROFIT_ROW)
-  row:SetPoint("TOPLEFT", 4, -4 - (i - 1) * PROFIT_ROW)
+  row:SetPoint("TOPLEFT", 4, -PANEL_TOP - (i - 1) * PROFIT_ROW)
   row:SetPoint("RIGHT", panel, "RIGHT", -4, 0)
   row:EnableMouse(true)
   row:SetScript("OnEnter", PriceRowTooltip)
@@ -303,7 +304,7 @@ local function GetPriceRow(i)
     if text == "" then
       PriceDB(row)[row.itemID] = nil
     else
-      local copper = ns.ParseSilver(text)
+      local copper = ns.ParseMoney(text)
       if not copper then return end
       PriceDB(row)[row.itemID] = copper
     end
@@ -354,6 +355,26 @@ ahCut:SetScript("OnClick", function(self)
   UpdateProfit()
 end)
 
+local function UnitRadio(unit, label)
+  local radio = CreateFrame("CheckButton", nil, panel, "UIRadioButtonTemplate")
+  radio.text:SetText(label)
+  radio.text:SetFontObject("GameFontHighlightSmall")
+  radio:SetScript("OnClick", function()
+    WhatMatsPriceDB.unit = unit
+    for _, row in ipairs(priceRows) do row.box:ClearFocus() end
+    UpdateProfit()
+  end)
+  return radio
+end
+
+local goldRadio = UnitRadio("gold", "Gold")
+goldRadio:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -34, -5)
+local silverRadio = UnitRadio("silver", "Silver")
+silverRadio:SetPoint("RIGHT", goldRadio, "LEFT", -40, 0)
+local unitLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+unitLabel:SetPoint("RIGHT", silverRadio, "LEFT", -6, 0)
+unitLabel:SetText("Prices in")
+
 local function Layout()
   local open = current ~= nil and panelOpen
   panel:SetShown(open)
@@ -389,7 +410,7 @@ local function RenderProfit()
     row:Show()
   end
 
-  local y = -4 - i * PROFIT_ROW - 4
+  local y = -PANEL_TOP - i * PROFIT_ROW - 4
   for _, line in ipairs(FOOT_ORDER) do
     line.left:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, y)
     line.right:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -6, y)
@@ -401,8 +422,8 @@ end
 
 local function Money(copper, signed)
   if not copper then return RED_FONT_COLOR:WrapTextInColorCode("?") end
-  if not signed then return ns.FormatSilver(copper) end
-  local text = (copper >= 0 and "+" or "-") .. ns.FormatSilver(math.abs(copper))
+  if not signed then return ns.FormatMoney(copper) end
+  local text = (copper >= 0 and "+" or "-") .. ns.FormatMoney(math.abs(copper))
   return (copper >= 0 and GREEN_FONT_COLOR or RED_FONT_COLOR):WrapTextInColorCode(text)
 end
 
@@ -411,7 +432,7 @@ local function SetPriceRow(row, n, unit, src, age, when, subtotal)
   row.icon:SetTexture(C_Item.GetItemIconByID(row.itemID))
   row.name:SetText(n .. " x " .. ns.ItemText(row.itemID))
   if not row.box:HasFocus() then
-    row.box:SetText(unit and string.format("%.2f", unit / 100) or "")
+    row.box:SetText(unit and ns.FormatAmount(unit) or "")
     if src == "manual" then row.box:SetTextColor(1, 1, 1) else row.box:SetTextColor(0.6, 0.6, 0.6) end
   end
   local tag = SOURCE_TAG[src] or ""
@@ -439,8 +460,10 @@ UpdateProfit = function()
   end
 
   ahCut:SetChecked(WhatMatsPriceDB.ahCut)
+  goldRadio:SetChecked(ns.UnitName() == "gold")
+  silverRadio:SetChecked(ns.UnitName() == "silver")
   foot.revenue.right:SetText(Money(p.revenue))
-  foot.cost.right:SetText(Money(p.cash) .. GRAY_FONT_COLOR:WrapTextInColorCode("  (market " .. ns.FormatSilver(p.market) .. ")"))
+  foot.cost.right:SetText(Money(p.cash) .. GRAY_FONT_COLOR:WrapTextInColorCode("  (market " .. ns.FormatMoney(p.market) .. ")"))
   foot.net.right:SetText(p.net and Money(p.net, true) or Money(nil))
   local ratio = p.ratio and string.format("%.2f", p.ratio) or (p.revenue and "no cost" or "?")
   foot.ratio.right:SetText(ratio)
