@@ -196,7 +196,7 @@ local UpdateProfit
 
 local SOURCE_TAG = {
   manual = "set", ah = "AH", vendor = "vend", auctionator = "scan", ["auctionator-vendor"] = "scan",
-  seen = "low",
+  seen = "low", ["vendor-list"] = "vend",
 }
 
 local function DaysAgo(seconds)
@@ -209,6 +209,7 @@ local function SourceText(src, age, when)
   if src == "manual" then return "Your price" end
   if src == "ah" then return "Last AH purchase, " .. DaysAgo(time() - when) end
   if src == "vendor" then return "Last vendor purchase, " .. DaysAgo(time() - when) end
+  if src == "vendor-list" then return "Vendor price when you last visited, " .. DaysAgo(time() - when) end
   if src == "seen" then return "Lowest AH listing when you last viewed it, " .. DaysAgo(time() - when) end
   if src == "auctionator-vendor" then return "Auctionator vendor price" end
   if src == "auctionator" then

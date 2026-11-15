@@ -263,16 +263,26 @@ end
 
 -- No API says whether a vendor sells an item, so learn it from merchants visited.
 -- Only gold purchases count; anything with a currency or item cost is skipped.
+-- The listed price is kept per visit since reputation discounts vary by vendor.
 local function ScanMerchant()
-  local added = false
+  local changed = false
   for i = 1, GetMerchantNumItems() do
     local itemID = GetMerchantItemID(i)
-    if itemID and not WhatMatsVendorDB[itemID] and GetMerchantItemCostInfo(i) == 0 then
-      WhatMatsVendorDB[itemID] = true
-      added = true
+    if itemID and GetMerchantItemCostInfo(i) == 0 then
+      if not WhatMatsVendorDB[itemID] then
+        WhatMatsVendorDB[itemID] = true
+        changed = true
+      end
+      local _, _, price, stack = GetMerchantItemInfo(i)
+      if price and price > 0 then
+        local copper = price / math.max(stack or 1, 1)
+        local listed = WhatMatsPriceDB.vendor[itemID]
+        if not listed or listed.copper ~= copper then changed = true end
+        WhatMatsPriceDB.vendor[itemID] = { copper = copper, time = time() }
+      end
     end
   end
-  if added then ns.RefreshWindow() end
+  if changed then ns.RefreshWindow() end
 end
 
 function ns.IsVendorItem(itemID)
@@ -469,7 +479,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
       if type(WhatMatsPriceDB) ~= "table" then
         WhatMatsPriceDB = { ahCut = true }
       end
-      for _, k in ipairs({ "cost", "sale", "last", "self", "seen" }) do
+      for _, k in ipairs({ "cost", "sale", "bought", "vendor", "self", "seen" }) do
         WhatMatsPriceDB[k] = WhatMatsPriceDB[k] or {}
       end
       ns.InitMinimapButton()
