@@ -8,8 +8,11 @@ local function AuctionatorAPI()
   return a and a.API and a.API.v1
 end
 
+-- src is "ah" or "vendor"; each keeps its own last purchase.
 local function Record(itemID, copper, src)
-  WhatMatsPriceDB.last[itemID] = { copper = copper, src = src, time = time() }
+  local bought = WhatMatsPriceDB.bought
+  bought[itemID] = bought[itemID] or {}
+  bought[itemID][src] = { copper = copper, time = time() }
   ns.RefreshWindow()
 end
 
@@ -20,19 +23,25 @@ end
 
 -- Returns copper per unit, source, Auctionator's days-since-seen (nil past 21),
 -- and when we recorded it ourselves.
--- Sources: "manual", "ah", "vendor" (last purchases), "auctionator",
--- "auctionator-vendor", "seen" (lowest listing when we last viewed it on the AH).
+-- Sources: "manual", "vendor"/"ah" (last purchases), "vendor-list" (merchant
+-- listing when last visited), "auctionator-vendor", "auctionator",
+-- "seen" (lowest listing when we last viewed it on the AH).
+-- Any known vendor price wins over AH prices, so vendor items cost what a vendor charges.
 function ns.UnitPrice(itemID)
-  local manual = WhatMatsPriceDB.cost[itemID]
+  local db = WhatMatsPriceDB
+  local manual = db.cost[itemID]
   if manual then return manual, "manual" end
-  local last = WhatMatsPriceDB.last[itemID]
-  if last then return last.copper, last.src, nil, last.time end
+  local bought = db.bought[itemID] or {}
+  if bought.vendor then return bought.vendor.copper, "vendor", nil, bought.vendor.time end
+  local listed = db.vendor[itemID]
+  if listed then return listed.copper, "vendor-list", nil, listed.time end
   local api = AuctionatorAPI()
+  local atrVendor = api and api.GetVendorPriceByItemID(ADDON, itemID)
+  if atrVendor then return atrVendor, "auctionator-vendor" end
+  if bought.ah then return bought.ah.copper, "ah", nil, bought.ah.time end
   if api then
     local ah = api.GetAuctionPriceByItemID(ADDON, itemID)
     if ah then return ah, "auctionator", api.GetAuctionAgeByItemID(ADDON, itemID) end
-    local vendor = api.GetVendorPriceByItemID(ADDON, itemID)
-    if vendor then return vendor, "auctionator-vendor" end
   end
   return Seen(itemID)
 end
