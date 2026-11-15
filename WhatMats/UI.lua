@@ -531,7 +531,7 @@ local function Refresh()
 end
 
 local function SetCount(count, fromQtyBox)
-  current.count = count
+  current.count = math.max(count, 1)
   if not fromQtyBox then qtyBox:SetText(count) end
   Refresh()
 end
