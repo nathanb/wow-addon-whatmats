@@ -56,8 +56,9 @@ function ns.SalePrice(itemID)
   return MarketPrice(AuctionatorAPI(), itemID)
 end
 
--- Cash cost prices only what bags + bank can't cover; market cost prices all of it.
--- Self-sourced materials count toward neither.
+-- Net and ratio use market cost (every material at its price) so they don't
+-- move as crafting uses up inventory. Cash cost prices only what bags + bank
+-- can't cover. Self-sourced materials count toward neither.
 function ns.Profit(hit, count, totals)
   local db = WhatMatsPriceDB
   local outputID = hit.recipe.outputItemID
@@ -86,8 +87,8 @@ function ns.Profit(hit, count, totals)
   end
 
   if p.revenue then
-    p.net = p.revenue - p.cash
-    if p.cash > 0 then p.ratio = p.revenue / p.cash end
+    p.net = p.revenue - p.market
+    if p.market > 0 then p.ratio = p.revenue / p.market end
   end
   return p
 end
