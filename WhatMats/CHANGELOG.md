@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.11 - 2026-11-15
 
  - Net and ratio now count every material at its price, including ones already in your bags, so they no longer read "no cost" or change as you craft. What you still need to buy is shown in brackets next to the cost. (#16)
  - Profit prices a craftable material as its own item unless you expand it in the Materials list, instead of switching depending on what's in your bags.
