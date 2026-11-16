@@ -208,7 +208,7 @@ local function DaysAgo(seconds)
   return days == 1 and "1 day ago" or (days .. " days ago")
 end
 
-local function SourceText(src, age, when)
+local function SourceText(src, age, when, isOutput)
   if src == "manual" then return "Your price" end
   if src == "ah" then return "Last AH purchase, " .. DaysAgo(time() - when) end
   if src == "vendor" then return "Last vendor purchase, " .. DaysAgo(time() - when) end
@@ -218,7 +218,8 @@ local function SourceText(src, age, when)
   if src == "auctionator" then
     return "Auctionator AH scan, " .. (age and DaysAgo(age * 86400) or "over 21 days ago")
   end
-  return "No price. Type one in " .. ns.UnitName() .. ", or buy it once."
+  if isOutput then return "No price yet. Search it on the AH or type one in " .. ns.UnitName() .. "." end
+  return "No price yet. Visit a vendor that sells it, search it on the AH, or type one in " .. ns.UnitName() .. "."
 end
 
 local STALE_DAYS = 7
@@ -230,7 +231,7 @@ local function Stale(src, age, when)
 end
 
 local function PriceDB(row)
-  return row.isOutput and WhatMatsPriceDB.sale or WhatMatsPriceDB.cost
+  return row.isOutput and ns.prices.sale or ns.prices.cost
 end
 
 local function PriceRowTooltip(self)
@@ -239,7 +240,7 @@ local function PriceRowTooltip(self)
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
   GameTooltip:SetItemByID(row.itemID)
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine(SourceText(row.src, row.age, row.when), HIGHLIGHT_FONT_COLOR:GetRGB())
+  GameTooltip:AddLine(SourceText(row.src, row.age, row.when, row.isOutput), HIGHLIGHT_FONT_COLOR:GetRGB())
   if row.short and row.short > 0 and not row.self then
     GameTooltip:AddLine("Need to buy " .. row.short, HIGHLIGHT_FONT_COLOR:GetRGB())
   end
@@ -271,7 +272,7 @@ local function GetPriceRow(i)
   row.check:SetSize(20, 20)
   row.check:SetPoint("LEFT", 0, 0)
   row.check:SetScript("OnClick", function(self)
-    WhatMatsPriceDB.self[row.itemID] = self:GetChecked() or nil
+    ns.prices.self[row.itemID] = self:GetChecked() or nil
     UpdateProfit()
   end)
   row.check:SetScript("OnEnter", function(self)
@@ -443,7 +444,7 @@ local function SetPriceRow(row, n, unit, src, age, when, subtotal)
     row.box:SetText(unit and ns.FormatAmount(unit) or "")
     if src == "manual" then row.box:SetTextColor(1, 1, 1) else row.box:SetTextColor(0.6, 0.6, 0.6) end
   end
-  local tag = SOURCE_TAG[src] or ""
+  local tag = src and SOURCE_TAG[src] or ORANGE_FONT_COLOR:WrapTextInColorCode("?")
   row.tag:SetText(Stale(src, age, when) and ORANGE_FONT_COLOR:WrapTextInColorCode(tag) or tag)
   row.subtotal:SetText(subtotal)
 end

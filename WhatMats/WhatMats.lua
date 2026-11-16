@@ -271,7 +271,7 @@ end
 
 -- No API says whether a vendor sells an item, so learn it from merchants visited.
 -- Only gold purchases count; anything with a currency or item cost is skipped.
--- The listed price is kept per visit since reputation discounts vary by vendor.
+-- The listed price is per character (reputation discounts differ) and each visit overwrites it.
 local function ScanMerchant()
   local changed = false
   for i = 1, GetMerchantNumItems() do
@@ -283,9 +283,9 @@ local function ScanMerchant()
       end
       local copper = ns.MerchantUnitPrice(i)
       if copper then
-        local listed = WhatMatsPriceDB.vendor[itemID]
+        local listed = ns.prices.vendor[itemID]
         if not listed or listed.copper ~= copper then changed = true end
-        WhatMatsPriceDB.vendor[itemID] = { copper = copper, time = time() }
+        ns.prices.vendor[itemID] = { copper = copper, time = time() }
       end
     end
   end
@@ -486,9 +486,14 @@ frame:SetScript("OnEvent", function(_, event, arg1)
       if type(WhatMatsPriceDB) ~= "table" then
         WhatMatsPriceDB = { ahCut = true }
       end
+      -- Prices are per character (reputation, professions, AH). Older versions kept
+      -- them account-wide in WhatMatsPriceDB, mixed across characters, so those are dropped.
+      WhatMatsDB.prices = WhatMatsDB.prices or {}
       for _, k in ipairs({ "cost", "sale", "bought", "vendor", "self", "seen" }) do
-        WhatMatsPriceDB[k] = WhatMatsPriceDB[k] or {}
+        WhatMatsPriceDB[k] = nil
+        WhatMatsDB.prices[k] = WhatMatsDB.prices[k] or {}
       end
+      ns.prices = WhatMatsDB.prices
       ns.InitMinimapButton()
       ns.InitPricing()
     end
