@@ -10,7 +10,7 @@ end
 
 -- src is "ah" or "vendor"; each keeps its own last purchase.
 local function Record(itemID, copper, src)
-  local bought = WhatMatsPriceDB.bought
+  local bought = ns.prices.bought
   bought[itemID] = bought[itemID] or {}
   bought[itemID][src] = { copper = copper, time = time() }
   ns.RefreshWindow()
@@ -19,7 +19,7 @@ end
 -- Auctionator's scan or our lowest listing seen on the AH, whichever is newer.
 -- Auctionator reports age only in whole days (nil past 21), so a same-day tie goes to ours.
 local function MarketPrice(api, itemID)
-  local seen = WhatMatsPriceDB.seen[itemID]
+  local seen = ns.prices.seen[itemID]
   local scan = api and api.GetAuctionPriceByItemID(ADDON, itemID)
   if scan then
     local age = api.GetAuctionAgeByItemID(ADDON, itemID)
@@ -36,7 +36,7 @@ end
 -- "seen" (lowest listing when we last viewed it on the AH).
 -- Any known vendor price wins over AH prices, so vendor items cost what a vendor charges.
 function ns.UnitPrice(itemID)
-  local db = WhatMatsPriceDB
+  local db = ns.prices
   local manual = db.cost[itemID]
   if manual then return manual, "manual" end
   local bought = db.bought[itemID] or {}
@@ -51,7 +51,7 @@ function ns.UnitPrice(itemID)
 end
 
 function ns.SalePrice(itemID)
-  local manual = WhatMatsPriceDB.sale[itemID]
+  local manual = ns.prices.sale[itemID]
   if manual then return manual, "manual" end
   return MarketPrice(AuctionatorAPI(), itemID)
 end
@@ -60,17 +60,16 @@ end
 -- move as crafting uses up inventory. Cash cost prices only what bags + bank
 -- can't cover. Self-sourced materials count toward neither.
 function ns.Profit(hit, count, totals)
-  local db = WhatMatsPriceDB
   local outputID = hit.recipe.outputItemID
   local p = { outputID = outputID, made = count * hit.recipe.made, lines = {}, cash = 0, market = 0 }
   p.sale, p.saleSrc, p.saleAge, p.saleTime = ns.SalePrice(outputID)
   p.missing = p.sale == nil
   if p.sale then
-    p.revenue = p.sale * p.made * (db.ahCut and (1 - AH_CUT) or 1)
+    p.revenue = p.sale * p.made * (WhatMatsPriceDB.ahCut and (1 - AH_CUT) or 1)
   end
 
   for _, l in ipairs(totals) do
-    local line = { itemID = l.itemID, n = l.n, self = db.self[l.itemID] == true }
+    local line = { itemID = l.itemID, n = l.n, self = ns.prices.self[l.itemID] == true }
     line.short = math.max(l.n - C_Item.GetItemCount(l.itemID, true, false, true, true), 0)
     line.unit, line.src, line.age, line.time = ns.UnitPrice(l.itemID)
     if not line.self and l.n > 0 then
@@ -166,7 +165,7 @@ end
 -- everything loaded so far. Our own listings are skipped. No listings keeps the old price.
 local function RecordSeen(itemID, copper)
   if not copper then return end
-  WhatMatsPriceDB.seen[itemID] = { copper = copper, time = time() }
+  ns.prices.seen[itemID] = { copper = copper, time = time() }
   ns.RefreshWindow()
 end
 
@@ -176,7 +175,7 @@ local function RecordBrowse(results)
   local any = false
   for _, r in ipairs(results or {}) do
     if not r.containsOwnerItem and r.minPrice and r.minPrice > 0 then
-      WhatMatsPriceDB.seen[r.itemKey.itemID] = { copper = r.minPrice, time = time() }
+      ns.prices.seen[r.itemKey.itemID] = { copper = r.minPrice, time = time() }
       any = true
     end
   end

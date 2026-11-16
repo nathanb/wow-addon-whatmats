@@ -43,6 +43,8 @@ WhatMats picks up prices as you play:
 - **Auctionator:** its scanned prices, if you have it installed. When your own AH searches have a price too, the newer one is used. WhatMats works fine without it.
 - **You:** type a price into any box to set it yourself. Right-click the box to clear it.
 
+A material with no price yet shows an orange **?**; hover it for how to get one. Prices are kept per character, since each one has its own reputation discounts and auction house.
+
 Check the box next to a material you gather or make yourself to leave it out of the cost. Pick silver or gold at the top of the panel to choose how prices are shown and typed.
 
 ## Commands

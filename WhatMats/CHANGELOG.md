@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+ - Prices with nothing known yet show an orange "?" in the profit panel; hover for how to get one. (#15)
+ - Prices are now kept per character, so each character's reputation discounts and auction house don't overwrite another's. Prices learned before this update are cleared; visit vendors and the AH again to relearn them.
+
 ## 0.5.11 - 2026-11-15
 
  - Net and ratio now count every material at its price, including ones already in your bags, so they no longer read "no cost" or change as you craft. What you still need to buy is shown in brackets next to the cost. (#16)
