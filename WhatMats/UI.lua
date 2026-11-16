@@ -348,7 +348,7 @@ end
 
 local foot = { revenue = FootLine(), cost = FootLine(), net = FootLine(), ratio = FootLine() }
 foot.revenue.left:SetText("Revenue")
-foot.cost.left:SetText("Cost to buy")
+foot.cost.left:SetText("Cost")
 foot.net.left:SetText("Net")
 foot.ratio.left:SetText("Ratio")
 local FOOT_ORDER = { foot.revenue, foot.cost, foot.net, foot.ratio }
@@ -409,7 +409,7 @@ local function RenderProfit()
   out.isOutput = true
   out.check:Hide()
   out:Show()
-  for _, l in ipairs(plan.totals) do
+  for _, l in ipairs(plan.priceTotals) do
     i = i + 1
     local row = GetPriceRow(i)
     row.itemID = l.itemID
@@ -450,7 +450,7 @@ end
 
 UpdateProfit = function()
   if not current then return end
-  local p = ns.Profit(current.hit, current.count, plan.totals)
+  local p = ns.Profit(current.hit, current.count, plan.priceTotals)
 
   for _, row in ipairs(priceRows) do
     if row:IsShown() then
@@ -471,7 +471,7 @@ UpdateProfit = function()
   goldRadio:SetChecked(ns.UnitName() == "gold")
   silverRadio:SetChecked(ns.UnitName() == "silver")
   foot.revenue.right:SetText(Money(p.revenue))
-  foot.cost.right:SetText(Money(p.cash) .. GRAY_FONT_COLOR:WrapTextInColorCode("  (market " .. ns.FormatMoney(p.market) .. ")"))
+  foot.cost.right:SetText(Money(p.market) .. GRAY_FONT_COLOR:WrapTextInColorCode("  (to buy " .. ns.FormatMoney(p.cash) .. ")"))
   foot.net.right:SetText(p.net and Money(p.net, true) or Money(nil))
   local ratio = p.ratio and string.format("%.2f", p.ratio) or (p.revenue and "no cost" or "?")
   foot.ratio.right:SetText(ratio)

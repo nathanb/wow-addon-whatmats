@@ -33,8 +33,8 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 Click the **Profit** line under the recipe name to open the price breakdown. It shows:
 
 - **Revenue:** what the crafted items sell for on the auction house, minus the 5% AH cut (you can turn the cut off).
-- **Cost to buy:** what you'd spend on the materials you don't already have.
-- **Net and ratio:** what you make, and how many times your cost you get back. A ratio of 1.0 means you break even.
+- **Cost:** every material at its price, whether or not you already have it. A material you can craft counts at its own price unless you expand it in the Materials list. In brackets, what you'd spend on the materials you don't already have.
+- **Net and ratio:** revenue minus cost, and how many times your cost you get back. A ratio of 1.0 means you break even. Neither changes as you craft and use up materials.
 
 WhatMats picks up prices as you play:
 

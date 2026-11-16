@@ -258,7 +258,15 @@ function ns.Compute(hit, count)
   for _, l in ipairs(totals) do
     l.recipeID = recipeIDs[l.itemID]
   end
-  return { tree = tree, totals = totals, crafted = crafted }
+
+  -- Profit prices a shape that ignores inventory: only intermediates the
+  -- player expanded count as crafted, so it can't shift as crafting drains bags.
+  local expanded = {}
+  for itemID, mode in pairs(WhatMatsDB.expand) do
+    if mode == true then expanded[itemID] = true end
+  end
+  local priceTotals = SortedList(ns.Totals(hit, count, expanded))
+  return { tree = tree, totals = totals, crafted = crafted, priceTotals = priceTotals }
 end
 
 -- No API says whether a vendor sells an item, so learn it from merchants visited.
