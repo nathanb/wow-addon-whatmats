@@ -241,6 +241,29 @@ function ns.Totals(hit, count, crafted)
   return totals
 end
 
+-- Parts reachable from the recipe that its own profession makes; other
+-- professions' parts are left for the player to expand by hand.
+function ns.CraftableParts(hit)
+  local byOutput = {}
+  for _, r in pairs(WhatMatsDB.recipes[hit.profName] or {}) do
+    byOutput[r.outputItemID] = r
+  end
+  local parts = {}
+  local seen = { [hit.recipe.outputItemID] = true }
+  local function visit(reagents)
+    for _, r in ipairs(reagents) do
+      local producer = byOutput[r.itemID]
+      if producer and not seen[r.itemID] then
+        seen[r.itemID] = true
+        table.insert(parts, r.itemID)
+        visit(producer.reagents)
+      end
+    end
+  end
+  visit(hit.recipe.reagents)
+  return parts
+end
+
 function ns.Compute(hit, count)
   local byOutput, recipeIDs, profByOutput = BuildProducerIndex(hit.profName)
   local ctx = { byOutput = byOutput, recipeIDs = recipeIDs, profByOutput = profByOutput }

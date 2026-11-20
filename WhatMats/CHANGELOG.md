@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - Expand all button on the Materials list breaks down every part the recipe's profession makes, so Totals show the real raw materials. Once everything is expanded it turns into Reset. Expanded parts are also priced as their materials in the profit panel. (#20)
+
 ## 0.5.12 - 2026-11-15
 
  - Prices with nothing known yet show an orange "?" in the profit panel; hover for how to get one. (#15)

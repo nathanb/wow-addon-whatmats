@@ -13,6 +13,7 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 ## What it does
 
 - **Breaks recipes down.** Shows every material a recipe needs, including the materials for any crafted parts.
+- **Expands everything at once.** Click **Expand all** above the Materials list to break down every part your profession makes. Click **Reset** to go back.
 - **Checks what you have.** Counts what's in your bags and bank, so you only see what you're still missing.
 - **Gives you a shopping list.** The Totals list shows the base materials you still need to get.
 - **Marks vendor items.** Materials you can buy from a vendor with gold get a small vendor icon. WhatMats learns these as you visit vendors.
