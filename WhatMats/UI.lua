@@ -148,6 +148,23 @@ expandButton:SetNormalFontObject("GameFontNormalSmall")
 expandButton:SetHighlightFontObject("GameFontHighlightSmall")
 expandButton:Hide()
 
+local trackCheck = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+trackCheck:SetSize(20, 20)
+trackCheck:Hide()
+trackCheck.label = trackCheck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+trackCheck.label:SetPoint("RIGHT", trackCheck, "LEFT", -2, 0)
+trackCheck.label:SetText("Track")
+trackCheck:SetScript("OnClick", function(self)
+  ns.SetTracked(current.hit.recipeID, current.count, self:GetChecked())
+end)
+trackCheck:SetScript("OnEnter", function(self)
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:AddLine("Track these totals")
+  GameTooltip:AddLine("Shows them in the objective tracker; shift-click it there to stop", HIGHLIGHT_FONT_COLOR:GetRGB())
+  GameTooltip:Show()
+end)
+trackCheck:SetScript("OnLeave", GameTooltip_Hide)
+
 local function Walk(nodes, path, fn)
   for _, node in ipairs(nodes) do
     local key = path .. ">" .. node.itemID
@@ -498,6 +515,7 @@ local function UpdateValues()
   local recipe = current.hit.recipe
   local suffix = recipe.made > 1 and (" - makes " .. current.count * recipe.made) or ""
   subtitle:SetText(current.hit.profName .. suffix)
+  trackCheck:SetChecked(ns.IsTracked(current.hit.recipeID))
 
   local byKey = Index(plan)
   for _, row in ipairs(rows) do
@@ -568,6 +586,7 @@ end
 local function SetCount(count, fromQtyBox)
   current.count = math.max(count, 1)
   if not fromQtyBox then qtyBox:SetText(count) end
+  ns.SetTrackedCount(current.hit.recipeID, current.count)
   Refresh()
 end
 
@@ -769,6 +788,7 @@ Render = function()
   for _, row in ipairs(rows) do row:Hide() end
   titleButton:SetShown(current ~= nil)
   profitButton:SetShown(current ~= nil)
+  trackCheck:SetShown(current ~= nil)
   UpdateExpandButton()
   Layout()
   if not current then
@@ -795,12 +815,17 @@ Render = function()
   end)
   i = i + 1; SetHeader(i, " ")
   i = i + 1; SetHeader(i, "Totals")
+  trackCheck:ClearAllPoints()
+  trackCheck:SetPoint("RIGHT", rows[i], "RIGHT", -4, 0)
+  -- Rows are mouse-enabled siblings; keep the checkbox above the header row.
+  trackCheck:SetFrameLevel(content:GetFrameLevel() + 5)
   for _, l in ipairs(plan.totals) do
     i = i + 1; SetItem(i, l.itemID, "total:" .. l.itemID, 0, l.recipeID, nil, true)
   end
   content:SetHeight(i * ROW_HEIGHT)
   RenderProfit()
   UpdateValues()
+  ns.RefreshTracker()
 end
 
 qtyBox:SetScript("OnTextChanged", function(self, userInput)
@@ -834,11 +859,11 @@ function ns.CloseIfFromProfession()
 end
 
 -- Docks beside dockTo until the player drags the window somewhere else.
-function ns.LoadRecipe(recipeID, dockTo)
+function ns.LoadRecipe(recipeID, dockTo, count)
   local hit = ns.FindRecipeByID(recipeID)
   if not hit then return false end
-  current = { hit = hit, count = 1 }
-  qtyBox:SetText(1)
+  current = { hit = hit, count = count or 1 }
+  qtyBox:SetText(current.count)
   if dockTo and not moved then
     window:ClearAllPoints()
     -- Clears the profession tabs that hang off the frame's right edge.
