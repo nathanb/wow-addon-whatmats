@@ -141,6 +141,13 @@ local INDENT = 14
 local rows = {}
 local plan
 
+local expandButton = CreateFrame("Button", nil, content)
+expandButton:SetHeight(ROW_HEIGHT)
+expandButton:SetPoint("TOPRIGHT", content, "TOPRIGHT", -4, 0)
+expandButton:SetNormalFontObject("GameFontNormalSmall")
+expandButton:SetHighlightFontObject("GameFontHighlightSmall")
+expandButton:Hide()
+
 local function Walk(nodes, path, fn)
   for _, node in ipairs(nodes) do
     local key = path .. ">" .. node.itemID
@@ -669,6 +676,38 @@ local function GetRow(i)
   return row
 end
 
+expandButton:SetScript("OnClick", function(self)
+  local mode = not self.allOpen or nil
+  for _, itemID in ipairs(self.parts) do WhatMatsDB.expand[itemID] = mode end
+  Render()
+end)
+expandButton:SetScript("OnEnter", function(self)
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  if self.allOpen then
+    GameTooltip:AddLine("Reset parts to suggested")
+  else
+    GameTooltip:AddLine("Break down every part " .. current.hit.profName .. " makes")
+  end
+  GameTooltip:Show()
+end)
+expandButton:SetScript("OnLeave", GameTooltip_Hide)
+
+local function UpdateExpandButton()
+  local parts = current and ns.CraftableParts(current.hit) or {}
+  expandButton:SetShown(#parts > 0)
+  if #parts == 0 then return end
+  -- Rows are mouse-enabled siblings; keep the button above the header row.
+  expandButton:SetFrameLevel(content:GetFrameLevel() + 5)
+  local allOpen = true
+  for _, itemID in ipairs(parts) do
+    if WhatMatsDB.expand[itemID] ~= true then allOpen = false end
+  end
+  expandButton.parts = parts
+  expandButton.allOpen = allOpen
+  expandButton:SetText(allOpen and "Reset" or "Expand all")
+  expandButton:SetWidth(expandButton:GetFontString():GetStringWidth() + 8)
+end
+
 local function SetHeader(i, text)
   local row = GetRow(i)
   row.key = nil
@@ -715,6 +754,7 @@ Render = function()
   for _, row in ipairs(rows) do row:Hide() end
   titleButton:SetShown(current ~= nil)
   profitButton:SetShown(current ~= nil)
+  UpdateExpandButton()
   Layout()
   if not current then
     icon:Hide()
