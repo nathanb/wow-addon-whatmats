@@ -503,6 +503,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         WhatMatsDB = { recipes = {} }
       end
       WhatMatsDB.expand = WhatMatsDB.expand or {}
+      WhatMatsDB.tracked = WhatMatsDB.tracked or {}
       if type(WhatMatsVendorDB) ~= "table" then
         WhatMatsVendorDB = {}
       end

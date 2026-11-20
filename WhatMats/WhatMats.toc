@@ -10,5 +10,6 @@
 WhatMats.lua
 Pricing.lua
 UI.lua
+Tracker.lua
 MinimapButton.lua
 ProfessionButton.lua

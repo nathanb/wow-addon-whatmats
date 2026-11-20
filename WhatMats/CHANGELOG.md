@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - Track checkbox on the Totals list shows those totals in the objective tracker, broken down the same way as the window and counting your bags and bank. Track as many recipes as you like; click one in the tracker to open it in WhatMats, shift-click to stop tracking, or right-click for a menu. (#19)
+
 ## 0.5.13 - 2026-11-20
 
  - Expand all button on the Materials list breaks down every part the recipe's profession makes, so Totals show the real raw materials. Once everything is expanded it turns into Reset, which puts parts back the way they were. Expanded parts are also priced as their materials in the profit panel. (#20)
