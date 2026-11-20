@@ -676,15 +676,30 @@ local function GetRow(i)
   return row
 end
 
+-- itemID -> { mode = prior expand state } from the last Expand all, so Reset
+-- restores hand-set collapses instead of dropping them to suggested.
+local beforeExpand
+
 expandButton:SetScript("OnClick", function(self)
-  local mode = not self.allOpen or nil
-  for _, itemID in ipairs(self.parts) do WhatMatsDB.expand[itemID] = mode end
+  if self.allOpen then
+    for _, itemID in ipairs(self.parts) do
+      local saved = beforeExpand and beforeExpand[itemID]
+      if saved then WhatMatsDB.expand[itemID] = saved.mode else WhatMatsDB.expand[itemID] = nil end
+    end
+    beforeExpand = nil
+  else
+    beforeExpand = {}
+    for _, itemID in ipairs(self.parts) do
+      beforeExpand[itemID] = { mode = WhatMatsDB.expand[itemID] }
+      WhatMatsDB.expand[itemID] = true
+    end
+  end
   Render()
 end)
 expandButton:SetScript("OnEnter", function(self)
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
   if self.allOpen then
-    GameTooltip:AddLine("Reset parts to suggested")
+    GameTooltip:AddLine("Put parts back the way they were")
   else
     GameTooltip:AddLine("Break down every part " .. current.hit.profName .. " makes")
   end
