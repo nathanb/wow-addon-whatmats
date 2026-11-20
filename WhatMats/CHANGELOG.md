@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.14 - 2026-11-20
 
  - Track checkbox on the Totals list shows those totals in the objective tracker, broken down the same way as the window and counting your bags and bank. Track as many recipes as you like; click one in the tracker to open it in WhatMats, shift-click to stop tracking, or right-click for a menu. (#19)
 
