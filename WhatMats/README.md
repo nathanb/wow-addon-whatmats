@@ -16,7 +16,7 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 - **Expands everything at once.** Click **Expand all** above the Materials list to break down every part your profession makes. Click **Reset** to go back.
 - **Checks what you have.** Counts what's in your bags and bank, so you only see what you're still missing.
 - **Gives you a shopping list.** The Totals list shows the base materials you still need to get.
-- **Tracks your totals.** Check **Track** on the Totals list to follow them in the objective tracker while you gather. Shift-click a recipe there to stop tracking it.
+- **Tracks your totals.** Check **Track** on the Totals list to follow them on screen while you gather, in a panel that looks like the objective tracker and keeps counting during combat. Drag its header to move it. Shift-click a recipe there to stop tracking it.
 - **Marks vendor items.** Materials you can buy from a vendor with gold get a small vendor icon. WhatMats learns these as you visit vendors.
 - **Shows profit.** See what a craft costs, what it sells for, and whether it's worth making.
 - **Opens from your profession window.** Click the WhatMats button next to a recipe, or shift-click an item or recipe to load it.
