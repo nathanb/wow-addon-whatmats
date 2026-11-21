@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - Tracked totals now have their own panel, styled like the objective tracker, instead of sitting inside it. Counts update during combat, and the panel can't interfere with quest item buttons. Drag its header to move it; the spot is saved per character. (#19)
+
 ## 0.5.14 - 2026-11-20
 
  - Track checkbox on the Totals list shows those totals in the objective tracker, broken down the same way as the window and counting your bags and bank. Track as many recipes as you like; click one in the tracker to open it in WhatMats, shift-click to stop tracking, or right-click for a menu. (#19)
