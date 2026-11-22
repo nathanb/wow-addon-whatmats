@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.15 - 2026-11-21
 
  - Tracked totals now have their own panel, styled like the objective tracker, instead of sitting inside it. Counts update during combat, and the panel can't interfere with quest item buttons. Drag its header to move it; the spot is saved per character. (#19)
 
