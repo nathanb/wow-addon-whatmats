@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.16 - 2026-11-22
 
  - Fixed "WhatMats has been blocked from an action" when using items from your bags (such as learning a recipe) after clicking a recipe in WhatMats while a profession window was open. Clicking a recipe while that profession window is already open may no longer switch it to that recipe.
 
