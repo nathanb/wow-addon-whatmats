@@ -56,29 +56,14 @@ local qtyLabel = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 qtyLabel:SetPoint("RIGHT", qtyBox, "LEFT", -8, 0)
 qtyLabel:SetText("Qty")
 
--- OpenRecipe doesn't refocus an already-open profession window on Forever (the
--- OPEN_RECIPE_RESPONSE likely lands in the deferred branch, waiting on a
--- TRADE_SKILL_LIST_UPDATE that never comes). Reselect like Blizzard's same-profession branch.
-local function SelectInOpenProfession(recipeID)
-  if not (ProfessionsFrame and ProfessionsFrame:IsShown()) then return false end
-  if not C_TradeSkillUI.IsTradeSkillReady() then return false end
-  if C_TradeSkillUI.IsTradeSkillLinked() or C_TradeSkillUI.IsTradeSkillGuild() or C_TradeSkillUI.IsNPCCrafting() then return false end
-
-  local hit = ns.FindRecipeByID(recipeID)
-  local prof = C_TradeSkillUI.GetBaseProfessionInfo()
-  if not (hit and prof and hit.profName == prof.professionName) then return false end
-
-  local info = ProfessionsFrame:GetProfessionInfo()
-  info.openRecipeID = recipeID
-  ProfessionsFrame.CraftingPage:Init(info)
-  return true
-end
-
+-- Don't reselect in an already-open profession window by calling CraftingPage:Init
+-- ourselves: that taints the profession UI for the session and later blocks using
+-- items from bags. OpenRecipe may not refocus an open window on Forever.
 local function OpenOrLink(itemID, recipeID)
   if IsModifiedClick("CHATLINK") then
     local _, link = C_Item.GetItemInfo(itemID)
     if link then ChatFrameUtil.InsertLink(link) end
-  elseif not SelectInOpenProfession(recipeID) then
+  else
     C_TradeSkillUI.OpenRecipe(recipeID)
   end
 end

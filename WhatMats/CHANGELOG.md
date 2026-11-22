@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - Fixed "WhatMats has been blocked from an action" when using items from your bags (such as learning a recipe) after clicking a recipe in WhatMats while a profession window was open. Clicking a recipe while that profession window is already open may no longer switch it to that recipe.
+
 ## 0.5.15 - 2026-11-21
 
  - Tracked totals now have their own panel, styled like the objective tracker, instead of sitting inside it. Counts update during combat, and the panel can't interfere with quest item buttons. Drag its header to move it; the spot is saved per character. (#19)
