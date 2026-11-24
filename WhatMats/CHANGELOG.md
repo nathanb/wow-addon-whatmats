@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.18 - 2026-11-24
 
  - WhatMats now shows its own icon in the AddOns list instead of a question mark. (#27)
 
