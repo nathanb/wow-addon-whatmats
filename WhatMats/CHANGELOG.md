@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ - WhatMats now shows its own icon in the AddOns list instead of a question mark. (#27)
+
 ## 0.5.17 - 2026-11-24
 
  - Shift-clicking an item (for example to split a stack in your bags) no longer loads it into WhatMats. Load recipes with the WhatMats button in the profession window, the tracker, or `/mats`.

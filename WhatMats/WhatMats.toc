@@ -1,6 +1,7 @@
 ## Interface: 16001
 ## Title: WhatMats
 ## Notes: Breaks a profession recipe down into its raw materials.
+## IconTexture: Interface\Icons\inv_gizmo_03
 ## Version: 0.5.17
 ## X-License: BSD-3-Clause
 ## SavedVariablesPerCharacter: WhatMatsDB
