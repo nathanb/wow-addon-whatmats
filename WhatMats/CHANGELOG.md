@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.17 - 2026-11-24
 
  - Shift-clicking an item (for example to split a stack in your bags) no longer loads it into WhatMats. Load recipes with the WhatMats button in the profession window, the tracker, or `/mats`.
  - Clicking a recipe or part in WhatMats switches the open profession window to it again, without bringing back the "blocked from an action" error fixed in 0.5.16.
