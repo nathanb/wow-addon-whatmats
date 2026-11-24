@@ -19,14 +19,14 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 - **Tracks your totals.** Check **Track** on the Totals list to follow them on screen while you gather, in a panel that looks like the objective tracker and keeps counting during combat. Drag its header to move it. Shift-click a recipe there to stop tracking it.
 - **Marks vendor items.** Materials you can buy from a vendor with gold get a small vendor icon. WhatMats learns these as you visit vendors.
 - **Shows profit.** See what a craft costs, what it sells for, and whether it's worth making.
-- **Opens from your profession window.** Click the WhatMats button next to a recipe, or shift-click an item or recipe to load it.
+- **Opens from your profession window.** Click the WhatMats button next to a recipe to load it.
 - **Searches the auction house for you.** Shift-click any item in the WhatMats window while the auction house is open to search for it.
 
 ## How to use it
 
 1. Open each of your profession windows once so WhatMats can learn your recipes.
 2. Open WhatMats from the minimap button, the button in your profession window, or by typing `/mats`.
-3. Shift-click an item in your bags or a recipe in your profession window.
+3. Select a recipe in your profession window and click the WhatMats button.
 4. Set how many you want to make.
 5. Check the Totals list to see what you still need.
 
