@@ -58,13 +58,29 @@ qtyLabel:SetText("Qty")
 
 -- Don't reselect in an already-open profession window by calling CraftingPage:Init
 -- ourselves: that taints the profession UI for the session and later blocks using
--- items from bags. OpenRecipe may not refocus an open window on Forever.
+-- items from bags. When the open window sits on the base profession (no expansion
+-- child), ProfessionsFrame defers OPEN_RECIPE_RESPONSE until a TRADE_SKILL_LIST_UPDATE
+-- that never comes; reopening the profession sends one and Blizzard applies it.
+-- Checked a frame later: the deferral isn't visible yet when OpenRecipe returns.
+local function OpenRecipe(recipeID)
+  local wasShown = ProfessionsFrame and ProfessionsFrame:IsShown()
+  C_TradeSkillUI.OpenRecipe(recipeID)
+  if not wasShown then return end
+  C_Timer.After(0, function()
+    if not (ProfessionsFrame:IsShown() and ProfessionsFrame.openRecipeResponse) then return end
+    if C_TradeSkillUI.IsDataSourceChanging() then return end
+    local info = C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
+    local base = info and (info.parentProfessionID or info.professionID)
+    if base and base ~= 0 then C_TradeSkillUI.OpenTradeSkill(base) end
+  end)
+end
+
 local function OpenOrLink(itemID, recipeID)
   if IsModifiedClick("CHATLINK") then
     local _, link = C_Item.GetItemInfo(itemID)
     if link then ChatFrameUtil.InsertLink(link) end
   else
-    C_TradeSkillUI.OpenRecipe(recipeID)
+    OpenRecipe(recipeID)
   end
 end
 
@@ -93,7 +109,7 @@ titleButton:SetScript("OnLeave", GameTooltip_Hide)
 local hint = window:CreateFontString(nil, "OVERLAY", "GameFontDisable")
 hint:SetPoint("CENTER", window, "CENTER", 0, 0)
 hint:SetWidth(300)
-hint:SetText("Shift-click an item in your bags or a recipe in your profession window to load it.")
+hint:SetText("Select a recipe in your profession window and click the WhatMats button to load it.")
 
 local profitButton = CreateFrame("Button", nil, window)
 profitButton:SetPoint("TOPLEFT", 14, -74)
@@ -821,17 +837,6 @@ qtyBox:SetScript("OnEditFocusLost", function(self)
   if current then self:SetText(current.count) end
 end)
 
-local function Load(link)
-  local matches = ns.FindRecipes(link)
-  if #matches == 0 then
-    ns.Print("No known recipe makes " .. link .. ". Open its profession window once so it can be scanned.")
-    return
-  end
-  current = { hit = matches[1], count = math.max(tonumber(qtyBox:GetText()) or 1, 1) }
-  qtyBox:SetText(current.count)
-  Render()
-end
-
 function ns.ToggleWindow()
   window:SetShown(not window:IsShown())
 end
@@ -866,12 +871,6 @@ end
 
 window:SetScript("OnShow", Render)
 window:SetScript("OnHide", function() fromProfession = false end)
-
-hooksecurefunc("HandleModifiedItemClick", function(link)
-  if link and window:IsShown() and IsModifiedClick("CHATLINK") then
-    Load(link)
-  end
-end)
 
 window:RegisterEvent("BAG_UPDATE_DELAYED")
 window:RegisterEvent("GET_ITEM_INFO_RECEIVED")
