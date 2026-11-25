@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.19 - 2026-11-25
 
  - Hovering the bag / bank count in the Materials list now explains the numbers and colors. (#28)
  - Qty and the Totals amounts now have arrow buttons to step them down or up. (#22)
