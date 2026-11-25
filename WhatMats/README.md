@@ -27,7 +27,7 @@ Many recipes need parts that are themselves crafted. That means a lot of tooltip
 1. Open each of your profession windows once so WhatMats can learn your recipes.
 2. Open WhatMats from the minimap button, the button in your profession window, or by typing `/mats`.
 3. Select a recipe in your profession window and click the WhatMats button.
-4. Set how many you want to make.
+4. Set how many you want to make: type a number or use the arrows beside it.
 5. Check the Totals list to see what you still need.
 
 ## Checking profit

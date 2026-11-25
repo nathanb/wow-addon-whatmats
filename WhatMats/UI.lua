@@ -3,6 +3,7 @@ local ADDON, ns = ...
 local ROW_HEIGHT = 22
 local current -- { hit = ..., count = n }
 local TabFocus
+local SetCount
 
 local window = CreateFrame("Frame", "WhatMatsFrame", UIParent, "BasicFrameTemplateWithInset")
 window:SetSize(380, 440)
@@ -34,7 +35,7 @@ title:SetWordWrap(false)
 local subtitle = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
 
-local function NumberBox(parent)
+local function NumberBox(parent, onStep)
   local box = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
   box:SetSize(44, 18)
   box:SetAutoFocus(false)
@@ -45,15 +46,33 @@ local function NumberBox(parent)
   box:SetScript("OnEnterPressed", box.ClearFocus)
   box:SetScript("OnEscapePressed", box.ClearFocus)
   box:SetScript("OnTabPressed", function(self) TabFocus(self) end)
+  for dir, page in pairs({ [-1] = "PrevPage", [1] = "NextPage" }) do
+    local button = CreateFrame("Button", nil, box)
+    button:SetSize(22, 22)
+    button:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-" .. page .. "-Up")
+    button:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-" .. page .. "-Down")
+    button:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    button:SetScript("OnClick", function()
+      if SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+      onStep(dir)
+      box:ClearFocus()
+    end)
+    if dir < 0 then box.dec = button else box.inc = button end
+  end
+  -- InputBoxTemplate's left border hangs past the box's left edge.
+  box.dec:SetPoint("RIGHT", box, "LEFT", -6, 0)
+  box.inc:SetPoint("LEFT", box, "RIGHT", 0, 0)
   return box
 end
 
-local qtyBox = NumberBox(window)
-qtyBox:SetPoint("TOPRIGHT", window, "TOPRIGHT", -34, -54)
+local qtyBox = NumberBox(window, function(dir)
+  if current then SetCount(Clamp(current.count + dir, 1, 99999)) end
+end)
+qtyBox:SetPoint("TOPRIGHT", window, "TOPRIGHT", -36, -54)
 qtyBox:SetText("1")
 
 local qtyLabel = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-qtyLabel:SetPoint("RIGHT", qtyBox, "LEFT", -8, 0)
+qtyLabel:SetPoint("RIGHT", qtyBox.dec, "LEFT", -4, 0)
 qtyLabel:SetText("Qty")
 
 -- Don't reselect in an already-open profession window by calling CraftingPage:Init
@@ -590,7 +609,7 @@ local function Refresh()
   end
 end
 
-local function SetCount(count, fromQtyBox)
+SetCount = function(count, fromQtyBox)
   current.count = math.max(count, 1)
   if not fromQtyBox then qtyBox:SetText(count) end
   ns.SetTrackedCount(current.hit.recipeID, current.count)
@@ -642,8 +661,18 @@ local function GetRow(i)
   row.icon:SetSize(16, 16)
   row.icon:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
 
-  row.input = NumberBox(row)
-  row.input:SetPoint("RIGHT", -4, 0)
+  -- Step to the nearest qty that changes this row's amount; multi-yield parts
+  -- can keep it flat across several crafts.
+  row.input = NumberBox(row, function(dir)
+    if not current then return end
+    local n = row.countNeed or 0
+    if dir > 0 then
+      SetCount(math.min(MaxCountFor(row.itemID, n) + 1, 99999))
+    else
+      SetCount(math.max(MaxCountFor(row.itemID, n - 1), 1))
+    end
+  end)
+  row.input:SetPoint("RIGHT", -26, 0)
   row.input:SetScript("OnTextChanged", function(self, userInput)
     if not userInput or not current then return end
     SetCount(MaxCountFor(row.itemID, tonumber(self:GetText()) or 0))
@@ -657,7 +686,7 @@ local function GetRow(i)
   row.needText:SetJustifyH("RIGHT")
 
   row.have = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  row.have:SetPoint("RIGHT", row.input, "LEFT", -8, 0)
+  row.have:SetPoint("RIGHT", row.input.dec, "LEFT", -4, 0)
   row.have:SetJustifyH("RIGHT")
 
   row.craftText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
