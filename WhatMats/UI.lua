@@ -200,11 +200,15 @@ local function MaxCountFor(itemID, amount)
   return lo
 end
 
+local function Counts(itemID)
+  local bags = C_Item.GetItemCount(itemID)
+  return bags, C_Item.GetItemCount(itemID, true, false, true, true) - bags
+end
+
 -- covered defaults to whether bags + bank hold need.
 local function HaveText(itemID, need, covered)
-  local bags = C_Item.GetItemCount(itemID)
-  local total = C_Item.GetItemCount(itemID, true, false, true, true)
-  local bank = total - bags
+  local bags, bank = Counts(itemID)
+  local total = bags + bank
   if covered == nil then covered = total >= need end
   -- Yellow: covered, but some of it is still in a bank.
   local color = not covered and RED_FONT_COLOR
@@ -525,10 +529,12 @@ local function UpdateValues()
       if row.isTotal then
         local n = data and data.n or 0
         if not row.input:HasFocus() then row.input:SetText(n) end
+        row.countNeed = n
         row.have:SetText(HaveText(row.itemID, n))
         local short = n - C_Item.GetItemCount(row.itemID, true, false, true, true)
         row.craftText:SetText(short > 0 and ("short " .. short) or "")
       else
+        row.countNeed = data and data.need or 0
         row.have:SetText(HaveText(row.itemID, data and data.used or 0, data ~= nil and data.short == 0))
         row.needText:SetText(data and data.need or 0)
         row.craftText:SetText(data and data.made > 0 and ("craft " .. data.made) or "")
@@ -692,6 +698,27 @@ local function GetRow(i)
     end
   end)
 
+  row.counts = CreateFrame("Frame", nil, row)
+  row.counts:SetHeight(ROW_HEIGHT)
+  row.counts:EnableMouse(true)
+  row.counts:SetScript("OnEnter", function(self)
+    local bags, bank = Counts(row.itemID)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("In your bags / bank")
+    GameTooltip:AddLine("Bags: " .. bags, HIGHLIGHT_FONT_COLOR:GetRGB())
+    GameTooltip:AddLine("Bank: " .. bank, HIGHLIGHT_FONT_COLOR:GetRGB())
+    GameTooltip:AddLine((row.isTotal and "Needed in total: " or "Needed: ") .. (row.countNeed or 0), HIGHLIGHT_FONT_COLOR:GetRGB())
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Enough in your bags", GREEN_FONT_COLOR:GetRGB())
+    GameTooltip:AddLine("Enough, but some is in your bank", YELLOW_FONT_COLOR:GetRGB())
+    GameTooltip:AddLine("Not enough yet", RED_FONT_COLOR:GetRGB())
+    GameTooltip:Show()
+  end)
+  row.counts:SetScript("OnLeave", GameTooltip_Hide)
+  row.counts:SetScript("OnMouseUp", function(_, button)
+    row:GetScript("OnMouseUp")(row, button)
+  end)
+
   rows[i] = row
   return row
 end
@@ -752,6 +779,8 @@ local function SetHeader(i, text)
   row.vendor:Hide()
   row.toggle:Hide()
   row.input:Hide()
+  row.counts:Hide()
+  row.countNeed = nil
   row.name:SetText("")
   row.have:SetText("")
   row.needText:SetText("")
@@ -778,6 +807,11 @@ local function SetItem(i, itemID, key, depth, recipeID, open, isTotal, profName)
   row.icon:SetTexture(C_Item.GetItemIconByID(itemID))
   row.icon:Show()
   row.input:SetShown(isTotal)
+  row.countNeed = nil
+  row.counts:ClearAllPoints()
+  row.counts:SetPoint("LEFT", row.have, "LEFT")
+  row.counts:SetPoint("RIGHT", isTotal and row.have or row.needText, "RIGHT")
+  row.counts:Show()
   row.have:SetText("")
   row.needText:SetText("")
   row.craftText:SetText("")
