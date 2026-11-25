@@ -3,6 +3,7 @@
 ## Unreleased
 
  - Hovering the bag / bank count in the Materials list now explains the numbers and colors. (#28)
+ - Qty and the Totals amounts now have arrow buttons to step them down or up. (#22)
 
 ## 0.5.18 - 2026-11-24
 
